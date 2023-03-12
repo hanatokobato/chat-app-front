@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useLocalStorage from '../hooks/useLocalStorage';
+import useHttp from '../hooks/useHttp';
 
 interface AuthUser {
   id: string;
@@ -22,12 +23,23 @@ export const AuthContext = createContext<IAuthContext>({
 
 const AuthProvider = ({ children }: any) => {
   const [currentUser, setCurrentUser] = useLocalStorage('user', null);
+  const { isLoading, error, sendRequest } = useHttp();
   const navigate = useNavigate();
+
+  const handleLogin = useCallback((data: any) => {
+    console.log(data);
+  }, []);
 
   const login = useCallback(
     async (data: AuthUser) => {
-      setCurrentUser(data);
-      navigate('/home');
+      // setCurrentUser(data);
+      // navigate('/home');
+
+      console.log(`${process.env.REACT_APP_API_URL}/api/v1/login`);
+      sendRequest(
+        { url: `${process.env.REACT_APP_API_URL}/api/v1/login` },
+        handleLogin
+      );
     },
     [navigate, setCurrentUser]
   );

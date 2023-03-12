@@ -7,6 +7,7 @@ services:
       - .:/usr/src/app
       - node_modules:/usr/src/app/node_modules
     command: npm start
+    entrypoint: ./docker-entrypoint.sh
     ports:
       - '3001:3001'
     environment:
