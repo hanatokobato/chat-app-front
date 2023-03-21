@@ -1,52 +1,43 @@
-import React, { createContext, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useCallback } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 
-interface AuthUser {
+export interface ICurrentUser {
   id: string;
   name: string;
   email: string;
 }
 
 interface IAuthContext {
-  currentUser: AuthUser | null;
-  login: any;
-  logout: any;
+  currentUser?: ICurrentUser;
+  login: (user: ICurrentUser) => void;
+  logout: () => void;
 }
 
 export const AuthContext = createContext<IAuthContext>({
-  currentUser: null,
+  currentUser: undefined,
   login: () => {},
   logout: () => {},
 });
 
 const AuthProvider = ({ children }: any) => {
-  const [currentUser, setCurrentUser] = useLocalStorage('user', null);
-  const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useLocalStorage('user', undefined);
 
   const login = useCallback(
-    async (data: AuthUser) => {
-      setCurrentUser(data);
-      navigate('/home');
+    (user: ICurrentUser) => {
+      setCurrentUser(user);
     },
-    [navigate, setCurrentUser]
+    [setCurrentUser]
   );
 
   const logout = useCallback(() => {
-    setCurrentUser(null);
-    navigate('/', { replace: true });
-  }, [navigate, setCurrentUser]);
+    setCurrentUser(undefined);
+  }, [setCurrentUser]);
 
-  const value = useMemo(
-    () => ({
-      currentUser,
-      login,
-      logout,
-    }),
-    [currentUser, login, logout]
+  return (
+    <AuthContext.Provider value={{ currentUser, login, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthProvider;
