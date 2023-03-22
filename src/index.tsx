@@ -2,7 +2,6 @@ import React, { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { BrowserRouter } from 'react-router-dom';
 import reportWebVitals from './reportWebVitals';
 import AuthProvider from './context/AuthContext';
 
@@ -11,13 +10,9 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <StrictMode>
-    <BrowserRouter>
-      <React.StrictMode>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </React.StrictMode>
-    </BrowserRouter>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>
 );
 

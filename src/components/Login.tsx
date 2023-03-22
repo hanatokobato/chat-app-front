@@ -1,80 +1,74 @@
-import React, { FormEvent, useState } from 'react';
-import useAuth from '../hooks/useAuth';
+import React from 'react';
+import axios from 'axios';
+import { Form, redirect, useActionData, useNavigation } from 'react-router-dom';
 import './Login.scss';
+import AppError from '../utils/AppError';
+import { ICurrentUser } from '../context/AuthContext';
 
-interface Error {
-  name: string;
-  message: string;
-}
+export const action =
+  ({ login }: { login: (user: ICurrentUser) => void }) =>
+  async ({ request }: any) => {
+    try {
+      const formData = await request.formData();
+      const payload = {
+        email: formData.get('email'),
+        password: formData.get('password'),
+      };
 
-const Login = () => {
-  const auth = useAuth();
-  const [errorMessages, setErrorMessages] = useState<Error>();
-  const [isSubmitted, setIsSubmitted] = useState(false);
+      const response: any = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/v1/login`,
+        payload
+      );
 
-  const database = [
-    {
-      username: 'test@example.com',
-      password: 'pass1',
-    },
-    {
-      username: 'user2',
-      password: 'pass2',
-    },
-  ];
-
-  const errors = {
-    uname: 'invalid username',
-    pass: 'invalid password',
-  };
-
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-
-    var { uname, pass } = document.forms[0];
-
-    const userData = database.find((user) => user.username === uname.value);
-
-    if (userData) {
-      if (userData.password !== pass.value) {
-        setErrorMessages({ name: 'pass', message: errors.pass });
+      if (response.status === 'success') {
+        login({ id: '1', email: 'test@example.com', name: 'test' });
+        redirect('/');
       } else {
-        setIsSubmitted(true);
-        auth.login({ id: 1, email: uname.value });
+        return {
+          status: 'failed',
+          error: 'Invalid email or password.',
+        };
       }
-    } else {
-      setErrorMessages({ name: 'uname', message: errors.uname });
+    } catch (e: any) {
+      throw new AppError(e, 401);
     }
   };
 
-  const renderErrorMessage = (name: string) =>
-    name === errorMessages?.name && (
-      <div className="error">{errorMessages.message}</div>
-    );
+const Login = () => {
+  const data: any = useActionData();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === 'submitting';
 
   return (
-    <div className="app">
-      <div className="login-form">
-        <div className="title">Sign In</div>
-        <div className="form">
-          <form onSubmit={handleSubmit}>
-            <div className="input-container">
-              <label>Username </label>
-              <input type="text" name="uname" required />
-              {renderErrorMessage('uname')}
+    <>
+      <Form method="post">
+        <div className="app">
+          <div className="login-form">
+            <div className="title">Sign In</div>
+            {data?.status === 'failed' && (
+              <span className="error">{data.error}</span>
+            )}
+            <div className="form">
+              <div className="input-container">
+                <label>Username </label>
+                <input type="text" name="email" required />
+              </div>
+              <div className="input-container">
+                <label>Password </label>
+                <input type="password" name="password" required />
+              </div>
+              <div className="button-container">
+                <input
+                  type="submit"
+                  disabled={isSubmitting}
+                  value={isSubmitting ? 'Submitting...' : 'Login'}
+                />
+              </div>
             </div>
-            <div className="input-container">
-              <label>Password </label>
-              <input type="password" name="pass" required />
-              {renderErrorMessage('pass')}
-            </div>
-            <div className="button-container">
-              <input type="submit" />
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
+      </Form>
+    </>
   );
 };
 
