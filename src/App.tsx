@@ -6,7 +6,9 @@ import ChatLayout from './components/ChatLaylout';
 import Home from './components/Home';
 import Login from './components/Login';
 import { action as loginAction } from './components/Login';
+import { action as signupAction } from './components/Signup';
 import RootLayout from './components/RootLayout';
+import Signup from './components/Signup';
 import { AuthContext } from './context/AuthContext';
 import { checkAuthLoader } from './utils/auth';
 
@@ -22,6 +24,11 @@ function App() {
         {
           index: true,
           element: <Home />,
+        },
+        {
+          path: '/signup',
+          element: <Signup />,
+          action: signupAction({ login }),
         },
         {
           path: '/login',
