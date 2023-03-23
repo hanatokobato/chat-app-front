@@ -1,19 +1,35 @@
-import React, { useCallback, useEffect, useState } from "react";
-import "./ChatLayout.scss";
-import ChatItem from "./ChatItem";
-import useWebSocket, { ReadyState } from "react-use-websocket";
+import React, { useCallback, useEffect, useState } from 'react';
+import './ChatLayout.scss';
+import ChatItem from './ChatItem';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 
-const socketUrl = "ws://localhost:3000/chat";
+const socketUrl = `${process.env.REACT_APP_API_WS_URL}/chat`;
+
+interface Message {
+  id: number;
+  message: string;
+  userId: string;
+  userName: string;
+  timestamp: string;
+}
 
 const ChatLayout = () => {
-  const [messageInput, setMessageInput] = useState<string>("");
+  const [messageInput, setMessageInput] = useState<string>('');
   const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl);
-  const [messageHistory, setMessageHistory] = useState<string[]>([]);
+  const [messageHistory, setMessageHistory] = useState<Message[]>([]);
 
   useEffect(() => {
     if (lastMessage !== null) {
-      console.log(lastMessage);
-      setMessageHistory((prev) => prev.concat(""));
+      const {
+        id,
+        message,
+        user_id: userId,
+        user_name: userName,
+        timestamp,
+      } = JSON.parse(lastMessage.data);
+      setMessageHistory((prev) =>
+        prev.concat({ id, message, userId, userName, timestamp })
+      );
     }
   }, [lastMessage, setMessageHistory]);
 
@@ -22,11 +38,11 @@ const ChatLayout = () => {
   }, [messageInput, sendMessage]);
 
   const connectionStatus = {
-    [ReadyState.CONNECTING]: "Connecting",
-    [ReadyState.OPEN]: "Open",
-    [ReadyState.CLOSING]: "Closing",
-    [ReadyState.CLOSED]: "Closed",
-    [ReadyState.UNINSTANTIATED]: "Uninstantiated",
+    [ReadyState.CONNECTING]: 'Connecting',
+    [ReadyState.OPEN]: 'Open',
+    [ReadyState.CLOSING]: 'Closing',
+    [ReadyState.CLOSED]: 'Closed',
+    [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
   }[readyState];
 
   return (
@@ -40,9 +56,9 @@ const ChatLayout = () => {
             <div className="messages-content">
               {messageHistory.map((message, i) => (
                 <ChatItem
-                  userName={`user ${i}`}
-                  timestamp="15:34:15"
-                  text={message}
+                  userName={message.userName}
+                  timestamp={message.timestamp}
+                  text={message.message}
                   key={i}
                 ></ChatItem>
               ))}
