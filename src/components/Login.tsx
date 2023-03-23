@@ -20,9 +20,9 @@ export const action =
         payload
       );
 
-      if (response.status === 'success') {
+      if (response.data.status === 'success') {
         login({ id: '1', email: 'test@example.com', name: 'test' });
-        redirect('/');
+        return redirect('/');
       } else {
         return {
           status: 'failed',

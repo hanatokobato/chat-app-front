@@ -19,10 +19,7 @@ export const action =
 
       const response: any = await axios.post(
         `${process.env.REACT_APP_API_URL}/api/v1/signup`,
-        payload,
-        {
-          withCredentials: true
-        }
+        payload
       );
 
       const { data, status } = response.data;
