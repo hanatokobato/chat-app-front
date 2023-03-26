@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import './ChatLayout.scss';
+import styles from './ChatLayout.module.scss';
 import ChatItem from './ChatItem';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import axios from 'axios';
 
 const socketUrl = `${process.env.REACT_APP_API_WS_URL}/chat`;
 
 interface Message {
   id: number;
   message: string;
-  userId: string;
-  userName: string;
-  timestamp: string;
+  user: {
+    _id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ChatLayout = () => {
@@ -19,16 +23,28 @@ const ChatLayout = () => {
   const [messageHistory, setMessageHistory] = useState<Message[]>([]);
 
   useEffect(() => {
+    const getMessages = async () => {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/v1/messages`
+      );
+
+      const { data, status } = response.data;
+
+      if (status === 'success') {
+        setMessageHistory(data.messages.map((m: Message) => ({ ...m })));
+      }
+    };
+
+    getMessages();
+  }, []);
+
+  useEffect(() => {
     if (lastMessage !== null) {
-      const {
-        id,
-        message,
-        user_id: userId,
-        user_name: userName,
-        timestamp,
-      } = JSON.parse(lastMessage.data);
+      const { id, message, user, createdAt, updatedAt } = JSON.parse(
+        lastMessage.data
+      );
       setMessageHistory((prev) =>
-        prev.concat({ id, message, userId, userName, timestamp })
+        prev.concat({ id, message, user, createdAt, updatedAt })
       );
     }
   }, [lastMessage, setMessageHistory]);
@@ -48,31 +64,31 @@ const ChatLayout = () => {
   return (
     <>
       <div>
-        <div className="chat">
-          <div className="chat-title">
+        <div className={styles.chat}>
+          <div className={styles['chat-title']}>
             <h1>Chatroom ({connectionStatus})</h1>
           </div>
-          <div className="messages">
-            <div className="messages-content">
+          <div className={styles.messages}>
+            <div className={styles['messages-content']}>
               {messageHistory.map((message, i) => (
                 <ChatItem
-                  userName={message.userName}
-                  timestamp={message.timestamp}
+                  userName={message.user.name}
+                  timestamp={message.createdAt}
                   text={message.message}
                   key={i}
                 ></ChatItem>
               ))}
             </div>
           </div>
-          <div className="message-box">
+          <div className={styles['message-box']}>
             <textarea
-              className="message-input"
+              className={styles['message-input']}
               placeholder="Type message..."
               onChange={(e) => setMessageInput(e.target.value)}
             ></textarea>
             <button
               type="submit"
-              className="message-submit"
+              className={styles['message-submit']}
               disabled={readyState !== ReadyState.OPEN}
               onClick={handleClickSendMessage}
             >
@@ -80,7 +96,7 @@ const ChatLayout = () => {
             </button>
           </div>
         </div>
-        <div className="bg"></div>
+        <div className={styles.bg}></div>
       </div>
     </>
   );
