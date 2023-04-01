@@ -1,7 +1,7 @@
 import React from 'react';
 import axios from 'axios';
 import { Form, redirect, useActionData, useNavigation } from 'react-router-dom';
-import './Login.scss';
+import styles from './Login.module.scss';
 import AppError from '../utils/AppError';
 import { ICurrentUser } from '../context/AuthContext';
 
@@ -48,30 +48,30 @@ const Signup = () => {
   return (
     <>
       <Form method="post">
-        <div className="app">
-          <div className="login-form">
-            <div className="title">User registration</div>
+        <div className={styles.app}>
+          <div className={styles['login-form']}>
+            <div className={styles.title}>User registration</div>
             {data?.status === 'failed' && (
-              <span className="error">{data.error}</span>
+              <span className={styles.error}>{data.error}</span>
             )}
-            <div className="form">
-              <div className="input-container">
+            <div className={styles.form}>
+              <div className={styles['input-container']}>
                 <label>Username </label>
                 <input type="text" name="name" required />
               </div>
-              <div className="input-container">
+              <div className={styles['input-container']}>
                 <label>Email </label>
                 <input type="text" name="email" required />
               </div>
-              <div className="input-container">
+              <div className={styles['input-container']}>
                 <label>Password </label>
                 <input type="password" name="password" required />
               </div>
-              <div className="input-container">
+              <div className={styles['input-container']}>
                 <label>Password Confirmation </label>
                 <input type="password" name="passwordConfirm" required />
               </div>
-              <div className="button-container">
+              <div className={styles['button-container']}>
                 <input
                   type="submit"
                   disabled={isSubmitting}

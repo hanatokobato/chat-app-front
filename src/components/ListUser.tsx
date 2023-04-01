@@ -1,3 +1,5 @@
+import { faSearch } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { IUser } from './Room';
@@ -28,7 +30,7 @@ const ListUser = ({ usersOnline, selectReceiver }: IProps) => {
           />
           <div className="input-group-prepend">
             <span className="input-group-text search_btn">
-              <i className="fas fa-search"></i>
+              <FontAwesomeIcon icon={faSearch} />
             </span>
           </div>
         </div>

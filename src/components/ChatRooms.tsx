@@ -1,26 +1,41 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { IRoom } from './Room';
+import AppError from './../utils/AppError';
+import errorHandler from '../utils/errorHandler';
+import { AuthContext } from '../context/AuthContext';
 
 const ChatRooms = () => {
+  const { logout } = useContext(AuthContext);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [filteredRooms, setFilteredRooms] = useState<IRoom[]>([]);
   const [totalRoomCount, setTotalRoomCount] = useState<number | undefined>();
 
   const fetchRooms = useCallback(async () => {
     try {
       const response: any = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/v1/rooms`
+        `${process.env.REACT_APP_API_URL}/api/v1/rooms`,
+        { params: { search: searchQuery } }
       );
       if (response.data.status === 'success') {
         setFilteredRooms(response.data.data.rooms);
         setTotalRoomCount(response.data.result);
       }
-    } catch (e) {}
-  }, []);
+    } catch (e: any) {
+      const error = e.response
+        ? new AppError(e.response.statusText, e.response.status)
+        : new AppError(e, 500);
+      errorHandler(error, { logout });
+    }
+  }, [searchQuery, logout]);
 
   useEffect(() => {
-    fetchRooms();
+    const delayDebbounceFn = setTimeout(() => {
+      fetchRooms();
+    }, 500);
+
+    return () => clearTimeout(delayDebbounceFn);
   }, [fetchRooms]);
 
   return (
@@ -34,11 +49,12 @@ const ChatRooms = () => {
             </h3>
             <div className="input-group">
               <input
-                v-model="searchQuery"
+                value={searchQuery}
                 type="text"
                 placeholder="Search..."
                 name=""
                 className="form-control search"
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <div className="input-group-prepend">
                 <span className="input-group-text search_btn">

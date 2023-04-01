@@ -1,3 +1,5 @@
+import { faLocationArrow } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useState } from 'react';
 import Emoji from './Emoji';
 import MessageItem from './MessageItem';
@@ -26,6 +28,13 @@ const SharedRoom = ({
   hideEmoji,
   selectEmoji,
 }: IProps) => {
+  const [inputMessage, setInputMessage] = useState<string>();
+
+  const saveMessageHandler = () => {
+    saveMessage(inputMessage);
+    setInputMessage('');
+  };
+
   return (
     <div className="card">
       <div className="card-header msg_head">
@@ -84,15 +93,23 @@ const SharedRoom = ({
       <div className="card-footer">
         <div className="input-group">
           <textarea
-            v-model="inputMessage"
+            value={inputMessage}
             name=""
             className="form-control type_msg"
             placeholder="Type your message..."
-            onKeyUp={saveMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyUp={(e) => {
+              if (e.key !== 'Enter') return;
+
+              saveMessageHandler();
+            }}
           />
           <div className="input-group-append">
-            <span className="input-group-text send_btn">
-              <i className="fas fa-location-arrow"></i>
+            <span
+              className="input-group-text send_btn"
+              onClick={saveMessageHandler}
+            >
+              <FontAwesomeIcon icon={faLocationArrow} />
             </span>
           </div>
         </div>
