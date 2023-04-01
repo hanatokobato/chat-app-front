@@ -5,6 +5,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import AuthProvider from './context/AuthContext';
+import EmojiProvider from './context/EmojiContext';
 import axios from 'axios';
 
 axios.defaults.withCredentials = true;
@@ -15,7 +16,9 @@ const root = ReactDOM.createRoot(
 root.render(
   <StrictMode>
     <AuthProvider>
-      <App />
+      <EmojiProvider>
+        <App />
+      </EmojiProvider>
     </AuthProvider>
   </StrictMode>
 );

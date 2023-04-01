@@ -1,5 +1,9 @@
 import React, { useContext } from 'react';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  redirect,
+  RouterProvider,
+} from 'react-router-dom';
 import './App.scss';
 import AppError from './components/AppError';
 import ChatLayout from './components/ChatLaylout';
@@ -10,12 +14,23 @@ import { action as signupAction } from './components/Signup';
 import RootLayout from './components/RootLayout';
 import Signup from './components/Signup';
 import { AuthContext } from './context/AuthContext';
-import { checkAuthLoader } from './utils/auth';
+import { loader as roomLoader } from './components/Room';
 import ChatRooms from './components/ChatRooms';
 import Room from './components/Room';
 
 function App() {
-  const { login } = useContext(AuthContext);
+  const { login, currentUser } = useContext(AuthContext);
+
+  const checkAuthLoader = ({ request }: any) => {
+    const url = new URL(request.url);
+
+    if (!currentUser && !['/login', '/signup'].includes(url.pathname)) {
+      return redirect('/login');
+    } else if (currentUser && ['/login', '/signup'].includes(url.pathname)) {
+      return redirect('/');
+    }
+    return true;
+  };
 
   const router = createBrowserRouter([
     {
@@ -30,11 +45,13 @@ function App() {
         {
           path: '/signup',
           element: <Signup />,
+          loader: checkAuthLoader,
           action: signupAction({ login }),
         },
         {
           path: '/login',
           element: <Login />,
+          loader: checkAuthLoader,
           action: loginAction({ login }),
         },
         {
@@ -50,7 +67,7 @@ function App() {
         {
           path: '/rooms/:id',
           element: <Room />,
-          loader: checkAuthLoader,
+          loader: roomLoader,
         },
       ],
     },

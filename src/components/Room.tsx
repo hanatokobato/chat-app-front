@@ -1,13 +1,19 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import ListUser from './ListUser';
 import PrivateChat from './PrivateChat';
 import SharedRoom from './SharedRoom';
 import sanitizeHtml from 'sanitize-html';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { useLoaderData } from 'react-router-dom';
 
 export interface IMessage {
   _id: string;
+  message: string;
+  type: string;
+  sender: IUser;
+  receiver: IUser;
+  createdAt: string;
   reactions: {
     user_id: string;
     emoji_id: string;
@@ -48,12 +54,28 @@ export interface IUser {
   name: string;
   email: string;
   new_messages: number;
+  color: string;
 }
 
 export interface ICoordinates {
   x: number;
   y: number;
 }
+
+interface ILoader {
+  room: IRoom;
+}
+
+export const loader = async ({ request, params }: any) => {
+  const roomId = params.id;
+
+  const response = await axios.get(
+    `${process.env.REACT_APP_API_URL}/api/v1/rooms/${roomId}`
+  );
+  const { room } = response.data.data;
+
+  return { room };
+};
 
 const initChat = {
   message: {
@@ -71,57 +93,71 @@ const initChat = {
 };
 
 const Room = () => {
+  const { room } = useLoaderData() as ILoader;
   const { currentUser } = useContext(AuthContext);
   const [publicChat, setPublicChat] = useState<IChat>(initChat);
   const [privateChat, setPrivateChat] = useState<IChat>(initChat);
   const [selectedMessage, setSelectedMessge] = useState<IMessage>();
   const [isShowEmoji, setIsShowEmoji] = useState<boolean>(false);
   const [emojiCoordinates, setEmojiCoordinates] = useState<ICoordinates>();
-  const [currentRoom, useCurrentRoom] = useState<IRoom>();
+  const [currentRoom, setCurrentRoom] = useState<IRoom>();
   const [usersOnline, setUsersOnline] = useState<IUser[]>([]);
 
-  const getMessages = async (room: string, page = 1, loadMore = false) => {
-    const isPrivate = room.toString().includes('__');
-    const chat = isPrivate ? privateChat : publicChat;
-    const setChat = isPrivate ? setPrivateChat : setPublicChat;
-    try {
-      setChat((currentChat) => ({
-        ...currentChat,
-        isLoading: true,
-      }));
-      const response = await axios.get(`/messages?room=${room}&page=${page}`);
-      setChat((currentChat) => ({
-        ...currentChat,
-        message: {
-          ...currentChat.message,
-          list: [...response.data.data.reverse(), ...currentChat.message.list],
-          currentPage: response.data.current_page,
-          perPage: response.data.per_page,
-          lastPage: response.data.last_page,
-          total: response.data.total,
-          newMessageArrived: response.data.data.length,
-        },
-      }));
+  const getMessages = useCallback(
+    async (room: string, page = 1, loadMore = false) => {
+      const isPrivate = room.toString().includes('__');
+      const setChat = isPrivate ? setPrivateChat : setPublicChat;
+      try {
+        setChat((currentChat) => ({
+          ...currentChat,
+          isLoading: true,
+        }));
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/api/v1/messages?room=${room}&page=${page}`
+        );
+        const responseMessages = response.data.data.messages.map((m: any) => ({
+          ...m,
+          reactions: [],
+        }));
+        setChat((currentChat) => {
+          return {
+            ...currentChat,
+            message: {
+              ...currentChat.message,
+              list: [
+                ...responseMessages.reverse(),
+                // ...currentChat.message.list, // TODO: uncomment
+              ],
+              currentPage: response.data.current_page,
+              perPage: response.data.per_page,
+              lastPage: response.data.last_page,
+              total: response.data.total,
+              newMessageArrived: response.data.data.length,
+            },
+          };
+        });
 
-      // TODO: scroll
-      // if (loadMore) {
-      //   this.$nextTick(() => {
-      //     const el = $(isPrivate ? '#private_room' : '#shared_room')
-      //     const lastFirstMessage = el.children().eq(chat.message.newMessageArrived - 1)
-      //     el.scrollTop(lastFirstMessage.position().top - 10)
-      //   })
-      // } else {
-      //   this.scrollToBottom(document.getElementById(isPrivate ? 'private_room' : 'shared_room'), false)
-      // }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setChat((currentChat) => ({
-        ...currentChat,
-        isLoading: false,
-      }));
-    }
-  };
+        // TODO: scroll
+        // if (loadMore) {
+        //   this.$nextTick(() => {
+        //     const el = $(isPrivate ? '#private_room' : '#shared_room')
+        //     const lastFirstMessage = el.children().eq(chat.message.newMessageArrived - 1)
+        //     el.scrollTop(lastFirstMessage.position().top - 10)
+        //   })
+        // } else {
+        //   this.scrollToBottom(document.getElementById(isPrivate ? 'private_room' : 'shared_room'), false)
+        // }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setChat((currentChat) => ({
+          ...currentChat,
+          isLoading: false,
+        }));
+      }
+    },
+    []
+  );
 
   const resetPrivateChat = () => {
     setPrivateChat(initChat);
@@ -140,11 +176,14 @@ const Room = () => {
       if (!message.length) {
         return;
       }
-      const response = await axios.post('/messages', {
-        receiver,
-        content: message,
-        room: receiver ? null : currentRoom!._id,
-      });
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/v1/messages`,
+        {
+          receiver,
+          message,
+          room: receiver ? null : currentRoom!._id,
+        }
+      );
       if (receiver) {
         setPrivateChat((currentChat) => {
           return {
@@ -169,7 +208,7 @@ const Room = () => {
             ...currentChat,
             message: {
               ...currentChat.message,
-              list: [...currentChat.message.list, response.data.message],
+              list: [...currentChat.message.list, { ...response.data.data.message, reactions: [] }],
             },
           };
         });
@@ -301,6 +340,17 @@ const Room = () => {
     //   })
     await getMessages(roomId); // need to await until messages are loaded first then we are able to focus the input below
   };
+
+  useEffect(() => {
+    if (room) {
+      setCurrentRoom(room);
+      getMessages(room._id);
+    }
+
+    // TODO: join room ws
+
+    // TODO: listen to user in private chat
+  }, []);
 
   return (
     <div className="row justify-content-center h-100">
