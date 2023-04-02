@@ -5,34 +5,37 @@ import styles from './Login.module.scss';
 import AppError from '../utils/AppError';
 import { ICurrentUser } from '../context/AuthContext';
 
-export const action =
-  ({ login }: { login: (user: ICurrentUser) => void }) =>
-  async ({ request }: any) => {
-    try {
-      const formData = await request.formData();
-      const payload = {
-        email: formData.get('email'),
-        password: formData.get('password'),
+export const action = ({
+  login,
+}: {
+  login: (user: ICurrentUser) => void;
+}) => async ({ request }: any) => {
+  try {
+    const formData = await request.formData();
+    const payload = {
+      email: formData.get('email'),
+      password: formData.get('password'),
+    };
+
+    const response: any = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/v1/login`,
+      payload
+    );
+
+    if (response.data.status === 'success') {
+      const user = response.data.data.user;
+      login({ id: user._id, email: user.email, name: user.name });
+      return redirect('/');
+    } else {
+      return {
+        status: 'failed',
+        error: 'Invalid email or password.',
       };
-
-      const response: any = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/v1/login`,
-        payload
-      );
-
-      if (response.data.status === 'success') {
-        login({ id: '1', email: 'test@example.com', name: 'test' });
-        return redirect('/');
-      } else {
-        return {
-          status: 'failed',
-          error: 'Invalid email or password.',
-        };
-      }
-    } catch (e: any) {
-      throw new AppError(e, 401);
     }
-  };
+  } catch (e: any) {
+    throw new AppError(e, 401);
+  }
+};
 
 const Login = () => {
   const data: any = useActionData();

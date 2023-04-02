@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 export interface IEmoji {
-  id: string;
+  _id: string;
   name: string;
   value: string;
   src: string;
@@ -26,7 +26,11 @@ const EmojiProvider = ({ children }: any) => {
         const response = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/v1/emojis`
         );
-        setEmojis(response.data.data.emojis);
+        const formattedEmojis = response.data.data.emojis.map((e: IEmoji) => ({
+          ...e,
+          src: `${process.env.REACT_APP_API_URL}${e.src}`,
+        }));
+        setEmojis(formattedEmojis);
       } catch (e) {
         console.log(e);
       }

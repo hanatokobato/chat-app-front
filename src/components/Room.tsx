@@ -117,7 +117,10 @@ const Room = () => {
         );
         const responseMessages = response.data.data.messages.map((m: any) => ({
           ...m,
-          reactions: [],
+          reactions: m.reactions.map((r: any) => ({
+            emoji_id: r.emoji._id,
+            user_id: r.user._id,
+          })),
         }));
         setChat((currentChat) => {
           return {
@@ -208,7 +211,10 @@ const Room = () => {
             ...currentChat,
             message: {
               ...currentChat.message,
-              list: [...currentChat.message.list, { ...response.data.data.message, reactions: [] }],
+              list: [
+                ...currentChat.message.list,
+                { ...response.data.data.message, reactions: [] },
+              ],
             },
           };
         });
@@ -265,43 +271,81 @@ const Room = () => {
 
   const hideEmoji = () => {
     setIsShowEmoji(false);
-    setSelectedMessge(undefined);
   };
 
   const selectEmoji = async (emoji: any) => {
     try {
       if (!selectedMessage) return;
 
-      const response = await axios.post('/reactions', {
-        msg_id: selectedMessage._id,
-        user_id: currentUser!.id,
-        emoji_id: emoji.id,
-      });
-      const index = selectedMessage.reactions.findIndex(
-        (item) => item.user_id === currentUser!.id
-      );
-      if (index > -1) {
-        const reaction = selectedMessage.reactions[index];
-        if (emoji.id === reaction.emoji_id) {
-          // deactive
-          selectedMessage.reactions.splice(index, 1);
-        } else {
-          reaction.emoji_id = emoji.id;
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL}/api/v1/reactions`,
+        {
+          msg_id: selectedMessage._id,
+          user_id: currentUser!.id,
+          emoji_id: emoji._id,
         }
-      } else {
-        // user first react
-        const { reaction } = response.data;
-        setSelectedMessge((currentMessage) => {
-          return {
-            ...currentMessage!,
-            reactions: [
-              ...currentMessage!.reactions,
-              { ...reaction, user: currentUser },
-            ],
-          };
-        });
-      }
-      hideEmoji();
+      );
+      getMessages(room._id);
+      // const index = selectedMessage.reactions.findIndex(
+      //   (item) => item.user_id === currentUser!.id
+      // );
+      // if (index > -1) {
+      //   const reaction = selectedMessage.reactions[index];
+      //   if (emoji._id === reaction.emoji_id) {
+      //     // deactive
+      //     setSelectedMessge((currentMessage) => {
+      //       const newReactions = [...currentMessage!.reactions];
+      //       newReactions.splice(index, 1);
+      //       return {
+      //         ...currentMessage!,
+      //         reactions: newReactions,
+      //       };
+      //     });
+      //     // selectedMessage.reactions.splice(index, 1);
+      //   } else {
+      //     setSelectedMessge((currentMessage) => {
+      //       const newReactions = [...currentMessage!.reactions];
+      //       newReactions[index].emoji_id = emoji._id;
+      //       return {
+      //         ...currentMessage!,
+      //         reactions: newReactions,
+      //       };
+      //     });
+      //     // reaction.emoji_id = emoji._id;
+      //   }
+      // } else {
+      //   // user first react
+      //   setSelectedMessge((currentMessage) => {
+      //     return {
+      //       ...currentMessage!,
+      //       reactions: [
+      //         ...currentMessage!.reactions,
+      //         {
+      //           msg_id: selectedMessage._id,
+      //           user_id: currentUser!.id,
+      //           emoji_id: emoji._id,
+      //         },
+      //       ],
+      //     };
+      //   });
+      // }
+      // setPublicChat((current) => {
+      //   const newMessages = current.message.list.map((msg) =>
+      //     msg._id === selectedMessage._id ? { ...selectedMessage } : msg
+      //   );
+
+      //   return Object.assign(
+      //     {},
+      //     {
+      //       ...current,
+      //       message: {
+      //         ...current.message,
+      //         list: newMessages,
+      //       },
+      //     }
+      //   );
+      // });
+      setSelectedMessge(undefined);
     } catch (error) {
       console.log(error);
     }

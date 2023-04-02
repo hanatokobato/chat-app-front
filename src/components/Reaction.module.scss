@@ -1,0 +1,22 @@
+.reaction-container {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  border-radius: 15px;
+  position: absolute;
+  right: 0;
+  padding: 0 4px;
+  .reaction-item {
+    img {
+      width: 14px;
+      height: 14px;
+    }
+    .total {
+      color: #0084ff;
+      font-weight: 600;
+      font-size: 13px;
+    }
+  }
+  .reaction-item:not(:first-child):not(:last-child) {
+    margin-left: 4px;
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { IMessage } from './Room';
 import { AuthContext } from '../context/AuthContext';
 import sanitizeHtml from 'sanitize-html';
@@ -8,11 +8,19 @@ import { faFaceSmile } from '@fortawesome/free-solid-svg-icons';
 
 interface IProps {
   message: IMessage;
+  isSelected?: boolean;
   showEmoji: (message: IMessage, event: any) => void;
   msgColor?: string;
+  hideEmoji: () => void;
 }
 
-const MessageItem = ({ message, showEmoji, msgColor }: IProps) => {
+const MessageItem = ({
+  message,
+  isSelected,
+  showEmoji,
+  msgColor,
+  hideEmoji,
+}: IProps) => {
   const { currentUser } = useContext(AuthContext);
   const [highlight] = useState<string>(() => {
     if (message.receiver) {
@@ -27,10 +35,27 @@ const MessageItem = ({ message, showEmoji, msgColor }: IProps) => {
       }
     );
   });
+  const emojiRef = useRef<HTMLDivElement>(null);
 
   const showEmojiHandler = (e: any) => {
     showEmoji(message, e);
   };
+
+  useEffect(() => {
+    if (isSelected) {
+      const closeEmojis = (e: any) => {
+        if (!emojiRef.current?.contains(e.target)) {
+          hideEmoji();
+        }
+      };
+
+      document.addEventListener('click', closeEmojis);
+
+      return () => {
+        document.removeEventListener('click', closeEmojis);
+      };
+    }
+  }, [isSelected]);
 
   return (
     <>
@@ -72,7 +97,7 @@ const MessageItem = ({ message, showEmoji, msgColor }: IProps) => {
               style={message.receiver ? { backgroundColor: msgColor } : {}}
             >
               <div dangerouslySetInnerHTML={{ __html: highlight }}></div>
-              {message.reactions.length && (
+              {!!message.reactions.length && (
                 <Reaction reactions={message.reactions} />
               )}
             </div>
@@ -91,7 +116,7 @@ const MessageItem = ({ message, showEmoji, msgColor }: IProps) => {
           </div>
         </>
       )}
-      {!message.reactions.length && (
+      {message.type !== 'bot' && message.sender._id !== currentUser!.id && (
         <div
           className={`msg-item d-flex justify-content-start mb-4 ${
             message.receiver ? 'private' : ''
@@ -123,14 +148,14 @@ const MessageItem = ({ message, showEmoji, msgColor }: IProps) => {
           </div>
           <div className="msg-actions d-flex ml-2">
             <div className="d-flex align-items-center">
-              <FontAwesomeIcon icon={faFaceSmile} color={'white'} title="React" />
-              <i
-                className="fal fa-grin-alt"
-                data-toggle="tooltip"
-                data-placement="top"
-                title="React"
-                onClick={showEmojiHandler}
-              ></i>
+              <div ref={emojiRef}>
+                <FontAwesomeIcon
+                  icon={faFaceSmile}
+                  color={'white'}
+                  title="React"
+                  onClick={showEmojiHandler}
+                />
+              </div>
             </div>
           </div>
         </div>

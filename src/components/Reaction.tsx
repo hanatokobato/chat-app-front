@@ -1,5 +1,6 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { EmojiContext } from '../context/EmojiContext';
+import styles from './Reaction.module.scss';
 
 interface IReaction {
   emoji_id: string;
@@ -12,13 +13,13 @@ interface IProps {
 const Reaction = ({ reactions }: IProps) => {
   const { emojis } = useContext(EmojiContext);
 
-  const [reactionFormat] = useState(() => {
+  const [reactionFormat, setReactionFormat] = useState(() => {
     const listReactionEmojis = [];
     for (const e of emojis) {
-      const index = reactions.findIndex((r) => r.emoji_id === e.id);
+      const index = reactions.findIndex((r) => r.emoji_id === e._id);
       if (index > -1) {
         const indexInList = listReactionEmojis.findIndex(
-          (item) => item.id === e.id
+          (item) => item._id === e._id
         );
         if (indexInList === -1) {
           listReactionEmojis.push(e);
@@ -28,19 +29,37 @@ const Reaction = ({ reactions }: IProps) => {
     return listReactionEmojis;
   });
 
+  useEffect(() => {
+    const listReactionEmojis = [];
+    for (const e of emojis) {
+      const index = reactions.findIndex((r) => r.emoji_id === e._id);
+      if (index > -1) {
+        const indexInList = listReactionEmojis.findIndex(
+          (item) => item._id === e._id
+        );
+        if (indexInList === -1) {
+          listReactionEmojis.push(e);
+        }
+      }
+    }
+    setReactionFormat(listReactionEmojis);
+  }, [reactions]);
+
   return (
-    <div className="reaction-container d-flex justify-content-center align-items-center">
+    <div
+      className={`${styles['reaction-container']} d-flex justify-content-center align-items-center`}
+    >
       {reactionFormat.map((e) => (
         <div
-          className="reaction-item d-flex"
+          className={`${styles['reaction-item']} d-flex"`}
           v-for="e in reactionFormat"
-          key={e.id}
+          key={e._id}
         >
           <img src={e.src} alt={e.alt} />
         </div>
       ))}
-      <div className="reaction-item d-flex">
-        <span className="total ml-1">{reactions.length}</span>
+      <div className={`${styles['reaction-item']} d-flex"`}>
+        <span className={`${styles.total} ml-1`}>{reactions.length}</span>
       </div>
     </div>
   );

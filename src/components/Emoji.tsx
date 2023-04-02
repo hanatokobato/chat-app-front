@@ -1,6 +1,7 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { ICoordinates, IMessage } from './Room';
 import { EmojiContext } from '../context/EmojiContext';
+import styles from './Emoji.module.scss';
 
 interface IProps {
   emojiCoordinates: ICoordinates;
@@ -29,20 +30,26 @@ const Emoji = ({
 }: IProps) => {
   const { emojis } = useContext(EmojiContext);
   const [userReaction] = useState<IUserReaction>(defaultUserReaction);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   return isShow ? (
     <div
-      className="emoji-container d-flex align-items-center"
+      ref={containerRef}
+      className={`${styles['emoji-container']} d-flex align-items-center`}
       style={{
         left: `${emojiCoordinates.x}px`,
         top: `${emojiCoordinates.y - 60}px`,
       }}
     >
       {emojis.map((e) => (
-        <div className="emoji-item" key={e.src} onClick={() => selectEmoji(e)}>
-          <div className="emoji-text">{e.name}</div>
+        <div
+          className={styles['emoji-item']}
+          key={e.src}
+          onClick={() => selectEmoji(e)}
+        >
+          <div className={styles['emoji-text']}>{e.name}</div>
           <img src={e.src} alt={e.alt} />
-          {userReaction.emojiId === e.id && <div className="dot"></div>}
+          {userReaction.emojiId === e._id && <div className="dot"></div>}
         </div>
       ))}
       <div className="overlay"></div>
