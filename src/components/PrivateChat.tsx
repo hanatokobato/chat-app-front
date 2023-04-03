@@ -124,6 +124,7 @@ const PrivateChat = ({
             message={message}
             msgColor={msgColor}
             showEmoji={showEmoji}
+            hideEmoji={hideEmoji}
           />
         ))}
         <div className="d-flex justify-content-end" v-if="chat.isSeen">

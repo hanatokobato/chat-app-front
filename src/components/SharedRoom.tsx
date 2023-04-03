@@ -86,7 +86,9 @@ const SharedRoom = ({
           <MessageItem
             key={message._id}
             message={message}
+            isSelected={selectedMessage?._id === message._id}
             showEmoji={showEmoji}
+            hideEmoji={hideEmoji}
           />
         ))}
       </div>
