@@ -1,0 +1,50 @@
+.overview {
+  position: f;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &__heading {
+    font-size: 2.25rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 1.5rem 3rem;
+  }
+}
+
+.detail {
+  font-size: 1.4rem;
+  display: flex;
+  padding: 1rem;
+  background-color: var(--color-grey-light-1);
+  border-bottom: var(--line);
+  height: calc(100% - 9rem);
+}
+
+.user_info {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+.user_info span {
+  font-size: 2rem;
+  color: white;
+}
+.user_info p {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.chat {
+  &--shared {
+    height: 100%;
+    overflow-y: auto;
+  }
+}
+
+.room {
+  &--shared {
+    height: 90%;
+    overflow-y: auto;
+  }
+}

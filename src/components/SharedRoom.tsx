@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Emoji from './Emoji';
 import MessageItem from './MessageItem';
 import { IRoom, IChat, IMessage, ICoordinates } from './Room';
+import styles from './Room.module.scss';
 
 interface IProps {
   currentRoom?: IRoom;
@@ -36,21 +37,10 @@ const SharedRoom = ({
   };
 
   return (
-    <div className="card">
-      <div className="card-header msg_head">
-        <div className="bd-highlight">
-          <div className="user_info">
-            <span>{currentRoom?.name}</span>
-          </div>
-          <div className="text-white ml-3">{currentRoom?.description}</div>
-        </div>
-      </div>
-      <div className="card-body msg_card_body" id="shared_room">
+    <>
+      <div id="shared_room" className={styles['room--shared']}>
         {chat.message.isLoading && (
-          <div
-            className="loading mb-2 text-center"
-            v-if="chat.message.isLoading"
-          >
+          <div className="loading mb-2 text-center">
             <svg
               version="1.1"
               id="loader-1"
@@ -92,12 +82,12 @@ const SharedRoom = ({
           />
         ))}
       </div>
-      <div className="card-footer">
+      <div className="mt-3">
         <div className="input-group">
           <textarea
             value={inputMessage}
             name=""
-            className="form-control type_msg"
+            className={`form-control ${styles.type_msg}`}
             placeholder="Type your message..."
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyUp={(e) => {
@@ -108,7 +98,7 @@ const SharedRoom = ({
           />
           <div className="input-group-append">
             <span
-              className="input-group-text send_btn"
+              className={`input-group-text ${styles.send_btn}`}
               onClick={saveMessageHandler}
             >
               <FontAwesomeIcon icon={faLocationArrow} />
@@ -126,7 +116,7 @@ const SharedRoom = ({
           selectEmoji={selectEmoji}
         />
       )}
-    </div>
+    </>
   );
 };
 
