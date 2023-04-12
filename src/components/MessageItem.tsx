@@ -5,6 +5,8 @@ import sanitizeHtml from 'sanitize-html';
 import Reaction from './Reaction';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFaceSmile } from '@fortawesome/free-solid-svg-icons';
+import profileImg from '../assets/images/profile.jpg';
+import styles from './MessageItem.module.scss';
 
 interface IProps {
   message: IMessage;
@@ -31,7 +33,7 @@ const MessageItem = ({
     return content.replace(
       new RegExp('chuc mung|congratulations|congrats|happy new year', 'gi'),
       (match: string) => {
-        return '<span class="highlightText">' + match + '</span>';
+        return `<span class="${styles.highlightText}">` + match + '</span>';
       }
     );
   });
@@ -60,9 +62,9 @@ const MessageItem = ({
   return (
     <>
       {message.type === 'bot' && (
-        <div className="d-flex justify-content-end mb-4">
+        <div className="d-flex justify-content-end mb-5">
           <div
-            className="msg_container_send bot-notification"
+            className={`${styles.msg_container_send} ${styles['bot-notification']}`}
             data-toggle="tooltip"
             data-placement="top"
             title={message.createdAt}
@@ -74,11 +76,11 @@ const MessageItem = ({
       {message.type !== 'bot' && message.sender._id === currentUser!.id && (
         <>
           <div
-            className={`msg-item d-flex justify-content-end mb-4 ${
-              message.receiver ? 'private' : ''
+            className={`${styles['msg-item']} d-flex justify-content-end mb-5 ${
+              message.receiver ? styles.private : ''
             }`}
           >
-            <div className="msg-actions d-flex mr-2">
+            <div className={`${styles['msg-actions']} d-flex mr-2`}>
               <div className="d-flex align-items-center">
                 <i
                   className="fal fa-grin-alt"
@@ -90,7 +92,7 @@ const MessageItem = ({
               </div>
             </div>
             <div
-              className="msg_container_send"
+              className={styles.msg_container_send}
               data-toggle="tooltip"
               data-placement="top"
               title={message.createdAt}
@@ -102,14 +104,14 @@ const MessageItem = ({
               )}
             </div>
             <div
-              className="img_cont_msg"
+              className={styles.img_cont_msg}
               data-toggle="tooltip"
               data-placement="top"
               title={`${message.sender.name} (${message.sender.email})`}
             >
               <img
-                src="/images/current_user.jpg"
-                className="rounded-circle user_img_msg"
+                src={profileImg}
+                className={`rounded-circle ${styles.user_img_msg}`}
                 alt=""
               />
             </div>
@@ -118,25 +120,30 @@ const MessageItem = ({
       )}
       {message.type !== 'bot' && message.sender._id !== currentUser!.id && (
         <div
-          className={`msg-item d-flex justify-content-start mb-4 ${
-            message.receiver ? 'private' : ''
+          className={`${styles['msg-item']} d-flex justify-content-start mb-5 ${
+            message.receiver ? styles.private : ''
           }`}
         >
           <div
-            className="img_cont_msg bg-white rounded-circle d-flex justify-content-center align-items-center"
+            className={`${styles.img_cont_msg} bg-white rounded-circle d-flex justify-content-center align-items-center`}
             data-toggle="tooltip"
             data-placement="top"
             title={`${message.sender.name} (${message.sender.email})`}
           >
             <span
               className="rounded-circle d-flex justify-content-center align-items-center"
-              style={{ backgroundColor: `${message.sender.color}` }}
+              style={{
+                backgroundColor: 'var(--color-primary-dark)',
+                color: 'var(--color-grey-light-1)',
+              }}
             >
               {message.sender.name[0].toUpperCase()}
             </span>
           </div>
           <div
-            className={`msg_container ${message.receiver ? 'bg-gray' : ''}`}
+            className={`${styles.msg_container} ${
+              message.receiver ? styles['bg-gray'] : ''
+            }`}
             data-toggle="tooltip"
             data-placement="top"
             title={message.createdAt}
@@ -146,13 +153,14 @@ const MessageItem = ({
               <Reaction reactions={message.reactions} />
             )}
           </div>
-          <div className="msg-actions d-flex ml-2">
+          <div className={`${styles['msg-actions']} d-flex ml-2`}>
             <div className="d-flex align-items-center">
               <div ref={emojiRef}>
                 <FontAwesomeIcon
                   icon={faFaceSmile}
-                  color={'white'}
+                  color={'var(--color-primary)'}
                   title="React"
+                  cursor="pointer"
                   onClick={showEmojiHandler}
                 />
               </div>

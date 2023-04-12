@@ -1,0 +1,36 @@
+.user-img {
+  width: 40px;
+  height: 40px;
+}
+
+.user-info {
+  margin-left: 1.5rem;
+}
+
+.contacts {
+  li {
+    list-style: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 1rem;
+    border-radius: 8px;
+
+    &:hover {
+      background-color: var(--color-grey-light-3);
+    }
+  }
+
+  &-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-header {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-body {
+    margin-top: 2rem;
+  }
+}

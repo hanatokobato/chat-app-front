@@ -4,7 +4,6 @@ import {
   redirect,
   RouterProvider,
 } from 'react-router-dom';
-import './App.scss';
 import AppError from './components/AppError';
 import ChatLayout from './components/ChatLaylout';
 import Home from './components/Home';
@@ -15,8 +14,8 @@ import RootLayout from './components/RootLayout';
 import Signup from './components/Signup';
 import { AuthContext } from './context/AuthContext';
 import { loader as roomLoader } from './components/Room';
-import ChatRooms from './components/ChatRooms';
 import Room from './components/Room';
+import Chat from './components/Chat';
 
 function App() {
   const { login, currentUser } = useContext(AuthContext);
@@ -61,12 +60,12 @@ function App() {
         },
         {
           path: '/rooms',
-          element: <ChatRooms />,
+          element: <Chat />,
           loader: checkAuthLoader,
         },
         {
           path: '/rooms/:id',
-          element: <Room />,
+          element: <Chat />,
           loader: roomLoader,
         },
       ],

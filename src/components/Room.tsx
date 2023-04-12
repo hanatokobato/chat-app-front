@@ -6,6 +6,7 @@ import sanitizeHtml from 'sanitize-html';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useLoaderData } from 'react-router-dom';
+import styles from './Room.module.scss';
 
 export interface IMessage {
   _id: string;
@@ -394,43 +395,51 @@ const Room = () => {
     // TODO: join room ws
 
     // TODO: listen to user in private chat
-  }, []);
+  }, [room]);
 
   return (
-    <div className="row justify-content-center h-100">
-      <div className="col-md-8 chat">
-        <SharedRoom
-          chat={publicChat}
-          currentRoom={currentRoom}
-          selectedMessage={selectedMessage}
-          isShowEmoji={isShowEmoji}
-          emojiCoordinates={emojiCoordinates}
-          saveMessage={saveMessage}
-          showEmoji={showEmoji}
-          hideEmoji={hideEmoji}
-          selectEmoji={selectEmoji}
-          // @getMessages="getMessages"
-        />
+    <>
+      <div className={styles.overview}>
+        <div className={styles.overview__heading}>
+          <h1>{currentRoom?.name}</h1>
+          <h5>{currentRoom?.description}</h5>
+        </div>
       </div>
-      <div className="col-md-4 chat">
-        <ListUser usersOnline={usersOnline} selectReceiver={selectReceiver} />
+      <div className={styles.detail}>
+        <div className={`col-md-9 ${styles['chat--shared']}`}>
+          <SharedRoom
+            chat={publicChat}
+            currentRoom={currentRoom}
+            selectedMessage={selectedMessage}
+            isShowEmoji={isShowEmoji}
+            emojiCoordinates={emojiCoordinates}
+            saveMessage={saveMessage}
+            showEmoji={showEmoji}
+            hideEmoji={hideEmoji}
+            selectEmoji={selectEmoji}
+            // @getMessages="getMessages"
+          />
+        </div>
+        <div className="flex-grow-1">
+          <ListUser usersOnline={usersOnline} selectReceiver={selectReceiver} />
+        </div>
+        {privateChat.selectedReceiver && (
+          <PrivateChat
+            chat={privateChat}
+            selectedMessage={selectedMessage}
+            isShowEmoji={isShowEmoji}
+            emojiCoordinates={emojiCoordinates}
+            closePrivateChat={closePrivateChat}
+            saveMessage={saveMessage}
+            focusPrivateInput={focusPrivateInput}
+            showEmoji={showEmoji}
+            hideEmoji={hideEmoji}
+            selectEmoji={selectEmoji}
+            // @getMessages="getMessages"
+          />
+        )}
       </div>
-      {privateChat.selectedReceiver && (
-        <PrivateChat
-          chat={privateChat}
-          selectedMessage={selectedMessage}
-          isShowEmoji={isShowEmoji}
-          emojiCoordinates={emojiCoordinates}
-          closePrivateChat={closePrivateChat}
-          saveMessage={saveMessage}
-          focusPrivateInput={focusPrivateInput}
-          showEmoji={showEmoji}
-          hideEmoji={hideEmoji}
-          selectEmoji={selectEmoji}
-          // @getMessages="getMessages"
-        />
-      )}
-    </div>
+    </>
   );
 };
 
