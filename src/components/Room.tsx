@@ -171,7 +171,7 @@ const Room = () => {
     resetPrivateChat();
   };
 
-  const saveMessage = async (message: string, receiver = null) => {
+  const saveMessage = async (message: string, receiver?: string) => {
     try {
       if (!receiver && !message.trim().length) {
         return;
@@ -417,7 +417,6 @@ const Room = () => {
             showEmoji={showEmoji}
             hideEmoji={hideEmoji}
             selectEmoji={selectEmoji}
-            // @getMessages="getMessages"
           />
         </div>
         <div className="flex-grow-1">
@@ -435,7 +434,6 @@ const Room = () => {
             showEmoji={showEmoji}
             hideEmoji={hideEmoji}
             selectEmoji={selectEmoji}
-            // @getMessages="getMessages"
           />
         )}
       </div>

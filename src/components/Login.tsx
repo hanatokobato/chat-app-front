@@ -4,6 +4,7 @@ import { Form, redirect, useActionData, useNavigation } from 'react-router-dom';
 import styles from './Login.module.scss';
 import AppError from '../utils/AppError';
 import { ICurrentUser } from '../context/AuthContext';
+import Header from './Header';
 
 export const action = ({
   login,
@@ -44,33 +45,55 @@ const Login = () => {
 
   return (
     <>
-      <Form method="post">
-        <div className={styles.app}>
-          <div className={styles['login-form']}>
-            <div className={styles.title}>Sign In</div>
-            {data?.status === 'failed' && (
-              <span className={styles.error}>{data.error}</span>
-            )}
-            <div className={styles.form}>
-              <div className={styles['input-container']}>
-                <label>Username </label>
-                <input type="text" name="email" required />
-              </div>
-              <div className={styles['input-container']}>
-                <label>Password </label>
-                <input type="password" name="password" required />
-              </div>
-              <div className={styles['button-container']}>
-                <input
-                  type="submit"
-                  disabled={isSubmitting}
-                  value={isSubmitting ? 'Submitting...' : 'Login'}
-                />
-              </div>
-            </div>
+      <Header />
+      <main className={styles.main}>
+        <Form
+          className={`${styles.form} ${styles['login-form']}`}
+          method="post"
+        >
+          <h2
+            className={`${styles['heading-secondary']} ${styles['ma-bt-lg']}`}
+          >
+            Log into your account
+          </h2>
+          {data?.status === 'failed' && (
+            <span className={styles.error}>{data.error}</span>
+          )}
+          <div className={styles['form__group']}>
+            <label htmlFor="email" className={styles['form__label']}>
+              Username{' '}
+            </label>
+            <input
+              id="email"
+              type="text"
+              name="email"
+              required
+              className={styles['form__input']}
+            />
           </div>
-        </div>
-      </Form>
+          <div className={styles['form__group']}>
+            <label htmlFor="password" className={styles['form__label']}>
+              Password{' '}
+            </label>
+            <input
+              id="password"
+              type="password"
+              name="password"
+              required
+              className={styles['form__input']}
+            />
+          </div>
+          <div className={styles['form__group']}>
+            <button
+              className="btn btn--primary"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Submitting...' : 'Login'}
+            </button>
+          </div>
+        </Form>
+      </main>
     </>
   );
 };
