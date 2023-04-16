@@ -6,7 +6,6 @@ import {
 } from 'react-router-dom';
 import AppError from './components/AppError';
 import ChatLayout from './components/ChatLaylout';
-import Home from './components/Home';
 import Login from './components/Login';
 import { action as loginAction } from './components/Login';
 import { action as signupAction } from './components/Signup';
@@ -14,7 +13,6 @@ import RootLayout from './components/RootLayout';
 import Signup from './components/Signup';
 import { AuthContext } from './context/AuthContext';
 import { loader as roomLoader } from './components/Room';
-import Room from './components/Room';
 import Chat from './components/Chat';
 
 function App() {
@@ -39,19 +37,8 @@ function App() {
       children: [
         {
           index: true,
-          element: <Home />,
-        },
-        {
-          path: '/signup',
-          element: <Signup />,
+          element: <Chat />,
           loader: checkAuthLoader,
-          action: signupAction({ login }),
-        },
-        {
-          path: '/login',
-          element: <Login />,
-          loader: checkAuthLoader,
-          action: loginAction({ login }),
         },
         {
           path: '/chat',
@@ -69,6 +56,18 @@ function App() {
           loader: roomLoader,
         },
       ],
+    },
+    {
+      path: '/login',
+      element: <Login />,
+      loader: checkAuthLoader,
+      action: loginAction({ login }),
+    },
+    {
+      path: '/signup',
+      element: <Signup />,
+      loader: checkAuthLoader,
+      action: signupAction({ login }),
     },
   ]);
 

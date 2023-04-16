@@ -9,7 +9,7 @@ const socketUrl = `${process.env.REACT_APP_API_WS_URL}/chat`;
 interface Message {
   id: number;
   message: string;
-  user: {
+  sender: {
     _id: string;
     name: string;
   };
@@ -44,7 +44,7 @@ const ChatLayout = () => {
         lastMessage.data
       );
       setMessageHistory((prev) =>
-        prev.concat({ id, message, user, createdAt, updatedAt })
+        prev.concat({ id, message, sender: user, createdAt, updatedAt })
       );
     }
   }, [lastMessage, setMessageHistory]);
@@ -72,7 +72,7 @@ const ChatLayout = () => {
             <div className={styles['messages-content']}>
               {messageHistory.map((message, i) => (
                 <ChatItem
-                  userName={message.user.name}
+                  userName={message.sender.name}
                   timestamp={message.createdAt}
                   text={message.message}
                   key={i}

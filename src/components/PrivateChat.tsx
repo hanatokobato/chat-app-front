@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import ColorPickerModal from './ColorPickerModal';
 import Emoji from './Emoji';
 import MessageItem from './MessageItem';
 import { IChat, IMessage, ICoordinates } from './Room';
+import styles from './PrivateChat.module.scss';
+import { throttle } from 'lodash';
+import doraImg from '../assets/images/dora.jpg';
 
 interface IProps {
   chat: IChat;
@@ -10,7 +13,7 @@ interface IProps {
   isShowEmoji: boolean;
   emojiCoordinates?: ICoordinates;
   closePrivateChat: () => void;
-  saveMessage: (e: any) => void;
+  saveMessage: (message: string, receiver?: string) => void;
   focusPrivateInput: () => void;
   showEmoji: (message: IMessage, event: any) => void;
   hideEmoji: () => void;
@@ -31,40 +34,55 @@ const PrivateChat = ({
 }: IProps) => {
   const [msgColor, setMsgColor] = useState<string>();
   const [isShowColorPicker, setIsShowColorPicker] = useState<boolean>(false);
+  const [inputMessage, setInputMessage] = useState<string>('');
 
   const toggleColorPicker = () => {};
 
-  const onInputPrivateChange = () => {};
+  const onInputPrivateChange = useCallback(
+    throttle(() => {
+      console.log('input');
+    }, 2000),
+    []
+  );
 
   const selectColor = () => {};
 
+  const saveMessageHandler = (e: any) => {
+    if (e.key !== 'Enter') return;
+
+    saveMessage(inputMessage, chat.selectedReceiver!._id);
+    setInputMessage('');
+  };
+
   return (
     <div
-      className={`private-message-container ${
-        chat.isPrivateChatExpand ? 'expand' : ''
+      className={`${styles['private-message-container']} ${
+        chat.isPrivateChatExpand ? styles.expand : ''
       }`}
       onClick={focusPrivateInput}
     >
       <div
-        className={`chat-header d-flex p-2 border-bottom ${
+        className={`${styles['chat-header']} d-flex p-2 border-bottom ${
           chat.hasNewMessage ? 'blink-anim' : ''
         }`}
         onClick={() => (chat.isPrivateChatExpand = !chat.isPrivateChatExpand)}
       >
-        <div className="img_cont">
+        <div className={styles.img_cont}>
           <img
-            src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
-            className="rounded-circle user_img"
+            src={doraImg}
+            className={`rounded-circle ${styles.user_img}`}
             style={{ width: '40px', height: '40px' }}
             alt=""
           />
           <span
-            className={`online_icon ${chat.isOnline ? 'online' : 'offline'}`}
+            className={`${styles.online_icon} ${
+              chat.isOnline ? 'online' : 'offline'
+            }`}
             style={{ bottom: '-3px' }}
           ></span>
         </div>
-        <div className="user_info">
-          <span style={{ color: 'black' }}>{chat.selectedReceiver?.name}</span>
+        <div className={styles.user_info}>
+          <span>{chat.selectedReceiver?.name}</span>
           {/* <!-- <p style="color: black;" class="mb-0">{{ chat.selectedReceiver.name }} left 50 mins ago</p> --> */}
         </div>
         <div className="color-picker">
@@ -78,89 +96,93 @@ const PrivateChat = ({
           ></i>
         </div>
 
-        <button className="btn-close" onClick={closePrivateChat}>
+        <button className={styles['btn-close']} onClick={closePrivateChat}>
           <i className="fal fa-times"></i>
         </button>
       </div>
 
-      <div
-        className="private-chat-body p-2"
-        v-if="chat.isPrivateChatExpand"
-        id="private_room"
-      >
-        <div className="loading mb-2 text-center" v-if="chat.message.isLoading">
-          <svg
-            version="1.1"
-            id="loader-1"
-            xmlns="http://www.w3.org/2000/svg"
-            xmlnsXlink="http://www.w3.org/1999/xlink"
-            x="0px"
-            y="0px"
-            width="40px"
-            height="40px"
-            viewBox="0 0 50 50"
-            xmlSpace="preserve"
-          >
-            <path
-              fill="#FF6700"
-              d="M43.935,25.145c0-10.318-8.364-18.683-18.683-18.683c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615c8.072,0,14.615,6.543,14.615,14.615H43.935z"
-              transform="rotate(18.3216 25 25)"
-            >
-              <animateTransform
-                attributeType="xml"
-                attributeName="transform"
-                type="rotate"
-                from="0 25 25"
-                to="360 25 25"
-                dur="0.6s"
-                repeatCount="indefinite"
-              ></animateTransform>
-            </path>
-          </svg>
-        </div>
-        {chat.message.list.map((message) => (
-          <MessageItem
-            key={message._id}
-            message={message}
-            msgColor={msgColor}
-            showEmoji={showEmoji}
-            hideEmoji={hideEmoji}
-          />
-        ))}
-        <div className="d-flex justify-content-end" v-if="chat.isSeen">
-          <i className="font-12px">Seen {chat.seenAt}</i>
-        </div>
-        <div
-          className="d-flex justify-content-start mb-4"
-          v-if="chat.isSelectedReceiverTyping"
-        >
-          <div className="img_cont_msg">
-            <img
-              src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg"
-              className="rounded-circle user_img_msg"
-              alt=""
-            />
-          </div>
-          <div className="msg_container">
-            <div id="wave">
-              <span className="dot"></span>
-              <span className="dot"></span>
-              <span className="dot"></span>
+      {chat.isPrivateChatExpand && (
+        <div className={`${styles['private-chat-body']} p-2`} id="private_room">
+          {chat.message.isLoading && (
+            <div className="loading mb-2 text-center">
+              <svg
+                version="1.1"
+                id="loader-1"
+                xmlns="http://www.w3.org/2000/svg"
+                xmlnsXlink="http://www.w3.org/1999/xlink"
+                x="0px"
+                y="0px"
+                width="40px"
+                height="40px"
+                viewBox="0 0 50 50"
+                xmlSpace="preserve"
+              >
+                <path
+                  fill="#FF6700"
+                  d="M43.935,25.145c0-10.318-8.364-18.683-18.683-18.683c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615c8.072,0,14.615,6.543,14.615,14.615H43.935z"
+                  transform="rotate(18.3216 25 25)"
+                >
+                  <animateTransform
+                    attributeType="xml"
+                    attributeName="transform"
+                    type="rotate"
+                    from="0 25 25"
+                    to="360 25 25"
+                    dur="0.6s"
+                    repeatCount="indefinite"
+                  ></animateTransform>
+                </path>
+              </svg>
             </div>
-          </div>
+          )}
+          {chat.message.list.map((message) => (
+            <MessageItem
+              key={message._id}
+              message={message}
+              msgColor={msgColor}
+              showEmoji={showEmoji}
+              hideEmoji={hideEmoji}
+            />
+          ))}
+          {chat.isSeen && (
+            <div className="d-flex justify-content-end">
+              <i className="font-12px">Seen {chat.seenAt}</i>
+            </div>
+          )}
+          {chat.isSelectedReceiverTyping && (
+            <div className="d-flex justify-content-start mb-4">
+              <div className={styles.img_cont_msg}>
+                <img
+                  src={doraImg}
+                  className={`rounded-circle ${styles.user_img_msg}`}
+                  alt=""
+                />
+              </div>
+              <div className={styles.msg_container}>
+                <div id={styles.wave}>
+                  <span className={styles.dot}></span>
+                  <span className={styles.dot}></span>
+                  <span className={styles.dot}></span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-      <div className="text-input" v-if="chat.isPrivateChatExpand">
-        <input
-          v-model="inputMessage"
-          id="private_input"
-          type="text"
-          className="w-100"
-          placeholder="Type a message..."
-          onKeyUp={saveMessage}
-          onInput={onInputPrivateChange}
-        />
-      </div>
+      )}
+      {chat.isPrivateChatExpand && (
+        <div className={styles['text-input']}>
+          <input
+            value={inputMessage}
+            id="private_input"
+            type="text"
+            className="w-100"
+            placeholder="Type a message..."
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyUp={saveMessageHandler}
+            onInput={onInputPrivateChange}
+          />
+        </div>
+      )}
       {emojiCoordinates && (
         <Emoji
           emojiCoordinates={emojiCoordinates}
@@ -171,12 +193,13 @@ const PrivateChat = ({
         />
       )}
 
-      <ColorPickerModal
-        v-if="isShowColorPicker"
-        isShow={isShowColorPicker}
-        hide={toggleColorPicker}
-        selectColor={selectColor}
-      />
+      {isShowColorPicker && (
+        <ColorPickerModal
+          isShow={isShowColorPicker}
+          hide={toggleColorPicker}
+          selectColor={selectColor}
+        />
+      )}
     </div>
   );
 };
