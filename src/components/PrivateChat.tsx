@@ -18,6 +18,7 @@ interface IProps {
   showEmoji: (message: IMessage, event: any) => void;
   hideEmoji: () => void;
   selectEmoji: (emoji: any) => void;
+  togglePrivateChat: () => void;
 }
 
 const PrivateChat = ({
@@ -31,6 +32,7 @@ const PrivateChat = ({
   showEmoji,
   hideEmoji,
   selectEmoji,
+  togglePrivateChat,
 }: IProps) => {
   const [msgColor, setMsgColor] = useState<string>();
   const [isShowColorPicker, setIsShowColorPicker] = useState<boolean>(false);
@@ -65,7 +67,7 @@ const PrivateChat = ({
         className={`${styles['chat-header']} d-flex p-2 border-bottom ${
           chat.hasNewMessage ? 'blink-anim' : ''
         }`}
-        onClick={() => (chat.isPrivateChatExpand = !chat.isPrivateChatExpand)}
+        onClick={() => togglePrivateChat()}
       >
         <div className={styles.img_cont}>
           <img
