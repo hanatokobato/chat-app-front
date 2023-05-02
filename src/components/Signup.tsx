@@ -78,7 +78,7 @@ const Signup = () => {
           </div>
           <div className={styles['form__group']}>
             <label htmlFor="email" className={styles['form__label']}>
-              Username{' '}
+              Email{' '}
             </label>
             <input
               id="email"
@@ -102,7 +102,7 @@ const Signup = () => {
           </div>
           <div className={styles['form__group']}>
             <label htmlFor="passwordConfirm" className={styles['form__label']}>
-              Password{' '}
+              Confirm your password{' '}
             </label>
             <input
               id="passwordConfirm"

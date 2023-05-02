@@ -15,6 +15,7 @@ import { useLoaderData } from 'react-router-dom';
 import styles from './Room.module.scss';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { cloneDeep } from 'lodash';
+import Chat from './Chat';
 
 export interface IMessage {
   _id: string;
@@ -23,6 +24,7 @@ export interface IMessage {
   sender: IUser;
   receiver: IUser;
   createdAt: string;
+  seenAt: string;
   reactions: {
     user_id: string;
     emoji_id: string;
@@ -83,6 +85,8 @@ enum ChatReducerTypes {
   OPEN_PRIVATE_CHAT,
   LOAD_MORE,
   TOGGLE_PRIVATE_CHAT,
+  TOGGLE_TYPING,
+  TOGGLE_SEEN,
 }
 
 interface IChatReducerActionPushMessage {
@@ -124,6 +128,18 @@ interface IChatReducerActionTogglePrivateChatDisplay {
   type: ChatReducerTypes.TOGGLE_PRIVATE_CHAT;
 }
 
+interface IChatReducerActionToggleIsTyping {
+  type: ChatReducerTypes.TOGGLE_TYPING;
+  isTyping: boolean;
+}
+
+interface IChatReducerActionToggleSeen {
+  type: ChatReducerTypes.TOGGLE_SEEN;
+  seen: boolean;
+  seenAt: string;
+  messageId: string;
+}
+
 type IChatReducerAction =
   | IChatReducerActionPushMessage
   | IChatReducerActionToggleLoading
@@ -132,7 +148,9 @@ type IChatReducerAction =
   | IChatReducerActionReset
   | IChatReducerActionOpenPrivateChat
   | IChatReducerActionLoadMore
-  | IChatReducerActionTogglePrivateChatDisplay;
+  | IChatReducerActionTogglePrivateChatDisplay
+  | IChatReducerActionToggleIsTyping
+  | IChatReducerActionToggleSeen;
 
 export const loader = async ({ request, params }: any) => {
   const roomId = params.id;
@@ -203,6 +221,8 @@ const privateChatReducer = (state: IChat, action: IChatReducerAction) => {
 
   if (action.type === ChatReducerTypes.SET_MESSAGES) {
     currentChat.message = action.message;
+    const lastMsg = action.message.list.at(-1);
+    currentChat.isSeen = !!lastMsg?.createdAt;
   }
 
   if (action.type === ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE) {
@@ -221,6 +241,16 @@ const privateChatReducer = (state: IChat, action: IChatReducerAction) => {
 
   if (action.type === ChatReducerTypes.TOGGLE_PRIVATE_CHAT) {
     currentChat.isPrivateChatExpand = !currentChat.isPrivateChatExpand;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_TYPING) {
+    currentChat.isSelectedReceiverTyping = action.isTyping;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_SEEN) {
+    currentChat.message.list.forEach((message, index, arr) => {
+      if (action.messageId === message._id) arr[index].seenAt = action.seenAt;
+    });
   }
 
   return currentChat;
@@ -242,7 +272,7 @@ const Room = () => {
   const [emojiCoordinates, setEmojiCoordinates] = useState<ICoordinates>();
   const [currentRoom, setCurrentRoom] = useState<IRoom>();
   const [usersOnline, setUsersOnline] = useState<IUser[]>([]);
-  const { sendMessage, lastMessage, readyState } = useWebSocket(
+  const { sendMessage: sendWsEvent, lastMessage, readyState } = useWebSocket(
     `${process.env.REACT_APP_API_WS_URL}/rooms/${room._id}`,
     {
       shouldReconnect: (closeEvent) => true,
@@ -326,13 +356,13 @@ const Room = () => {
           type: ChatReducerTypes.PUSH_MESSAGE,
           message: { ...response.data.data.message, reactions: [] },
         });
-        // TODO: broadcast typing
-        // this.$Echo
-        //   .private(`room.${this.privateChat.roomId}`)
-        //   .whisper('typing', {
-        //     user: this.$root.user,
-        //     isTyping: false,
-        //   });
+        sendWsEvent(
+          JSON.stringify({
+            type: 'typing',
+            isTyping: false,
+            receiverId: privateChat.selectedReceiver?._id,
+          })
+        );
       } else {
         dispatchPublicChat({
           type: ChatReducerTypes.PUSH_MESSAGE,
@@ -348,13 +378,6 @@ const Room = () => {
     const input = document.getElementById('private_input');
     if (input) {
       input.focus();
-      // TODO: broadcast seen
-      // this.$Echo.private(`room.${this.privateChat.roomId}`)
-      //   .whisper('seen', {
-      //     user: this.$root.user,
-      //     seen: true,
-      //     time: new Date()
-      //   })
       dispatchPrivateChat({
         type: ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE,
         hasNewMessage: false,
@@ -506,8 +529,6 @@ const Room = () => {
       setCurrentRoom(room);
       getMessages(room._id);
     }
-
-    // TODO: listen to user in private chat
   }, [room]);
 
   useEffect(() => {
@@ -529,7 +550,9 @@ const Room = () => {
           ) {
             if (
               privateChat.selectedReceiver &&
-              eventData.message.sender._id === privateChat.selectedReceiver._id
+              eventData.message.sender._id ===
+                privateChat.selectedReceiver._id &&
+              privateChat.isPrivateChatExpand
             ) {
               dispatchPrivateChat({
                 type: ChatReducerTypes.PUSH_MESSAGE,
@@ -561,9 +584,68 @@ const Room = () => {
             cur.filter((u) => u._id !== eventData.user._id)
           );
           break;
+        case 'typing':
+          dispatchPrivateChat({
+            type: ChatReducerTypes.TOGGLE_TYPING,
+            isTyping: eventData.isTyping,
+          });
+          break;
+        case 'seen':
+          dispatchPrivateChat({
+            type: ChatReducerTypes.TOGGLE_SEEN,
+            seen: eventData.seen,
+            seenAt: eventData.seenAt,
+            messageId: eventData.messageId,
+          });
+          break;
       }
     }
   }, [lastMessage]);
+
+  useEffect(() => {
+    const updateSeen = async (messageId: string) => {
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL}/api/v1/messages/${messageId}`,
+        {
+          seenAt: new Date(),
+        }
+      );
+
+      if (response.data.status === 'success') {
+        const message = response.data.data.message;
+        dispatchPrivateChat({
+          type: ChatReducerTypes.TOGGLE_SEEN,
+          seen: true,
+          seenAt: message.seenAt,
+          messageId: message._id,
+        });
+        sendWsEvent(
+          JSON.stringify({
+            type: 'seen',
+            seen: true,
+            seenAt: message.seenAt,
+            messageId: message._id,
+            receiverId: privateChat.selectedReceiver?._id,
+          })
+        );
+      }
+    };
+
+    const lastMsg = privateChat.message.list.at(-1);
+    if (
+      privateChat.selectedReceiver?._id &&
+      privateChat.isPrivateChatExpand &&
+      lastMsg &&
+      !lastMsg.seenAt &&
+      lastMsg.receiver._id === currentUser?.id
+    ) {
+      updateSeen(lastMsg._id);
+    }
+  }, [
+    privateChat.message.list,
+    privateChat.selectedReceiver,
+    privateChat.isPrivateChatExpand,
+  ]);
 
   const connectionStatus = {
     [ReadyState.CONNECTING]: 'Connecting',
@@ -619,6 +701,7 @@ const Room = () => {
             showEmoji={showEmoji}
             hideEmoji={hideEmoji}
             selectEmoji={selectEmoji}
+            sendWsEvent={sendWsEvent}
             togglePrivateChat={() => {
               dispatchPrivateChat({
                 type: ChatReducerTypes.TOGGLE_PRIVATE_CHAT,

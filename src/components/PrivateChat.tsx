@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import ColorPickerModal from './ColorPickerModal';
 import Emoji from './Emoji';
 import MessageItem from './MessageItem';
@@ -6,6 +6,7 @@ import { IChat, IMessage, ICoordinates } from './Room';
 import styles from './PrivateChat.module.scss';
 import { throttle } from 'lodash';
 import doraImg from '../assets/images/dora.jpg';
+import { SendMessage } from 'react-use-websocket';
 
 interface IProps {
   chat: IChat;
@@ -19,6 +20,7 @@ interface IProps {
   hideEmoji: () => void;
   selectEmoji: (emoji: any) => void;
   togglePrivateChat: () => void;
+  sendWsEvent: SendMessage;
 }
 
 const PrivateChat = ({
@@ -33,16 +35,34 @@ const PrivateChat = ({
   hideEmoji,
   selectEmoji,
   togglePrivateChat,
+  sendWsEvent,
 }: IProps) => {
   const [msgColor, setMsgColor] = useState<string>();
   const [isShowColorPicker, setIsShowColorPicker] = useState<boolean>(false);
   const [inputMessage, setInputMessage] = useState<string>('');
+  const [seenMessageId, setSeenMessageId] = useState<string>();
 
   const toggleColorPicker = () => {};
 
   const onInputPrivateChange = useCallback(
     throttle(() => {
-      console.log('input');
+      sendWsEvent(
+        JSON.stringify({
+          type: 'typing',
+          isTyping: true,
+          receiverId: chat.selectedReceiver!._id,
+        })
+      );
+
+      setTimeout(() => {
+        sendWsEvent(
+          JSON.stringify({
+            type: 'typing',
+            isTyping: false,
+            receiverId: chat.selectedReceiver!._id,
+          })
+        );
+      }, 1500);
     }, 2000),
     []
   );
@@ -55,6 +75,12 @@ const PrivateChat = ({
     saveMessage(inputMessage, chat.selectedReceiver!._id);
     setInputMessage('');
   };
+
+  useEffect(() => {
+    chat.message.list.forEach((msg) => {
+      if (msg.seenAt) setSeenMessageId(msg._id);
+    });
+  }, [chat.message.list]);
 
   return (
     <div
@@ -142,15 +168,11 @@ const PrivateChat = ({
               key={message._id}
               message={message}
               msgColor={msgColor}
+              isDisplaySeen={message._id === seenMessageId}
               showEmoji={showEmoji}
               hideEmoji={hideEmoji}
             />
           ))}
-          {chat.isSeen && (
-            <div className="d-flex justify-content-end">
-              <i className="font-12px">Seen {chat.seenAt}</i>
-            </div>
-          )}
           {chat.isSelectedReceiverTyping && (
             <div className="d-flex justify-content-start mb-4">
               <div className={styles.img_cont_msg}>
@@ -179,6 +201,7 @@ const PrivateChat = ({
             type="text"
             className="w-100"
             placeholder="Type a message..."
+            autoComplete="off"
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyUp={saveMessageHandler}
             onInput={onInputPrivateChange}
