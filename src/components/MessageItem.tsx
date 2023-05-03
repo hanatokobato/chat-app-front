@@ -6,6 +6,7 @@ import Reaction from './Reaction';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFaceSmile } from '@fortawesome/free-solid-svg-icons';
 import profileImg from '../assets/images/profile.jpg';
+import doraImg from '../assets/images/dora.jpg';
 import styles from './MessageItem.module.scss';
 
 interface IProps {
@@ -13,6 +14,7 @@ interface IProps {
   isSelected?: boolean;
   showEmoji: (message: IMessage, event: any) => void;
   msgColor?: string;
+  isDisplaySeen?: boolean;
   hideEmoji: () => void;
 }
 
@@ -22,6 +24,7 @@ const MessageItem = ({
   showEmoji,
   msgColor,
   hideEmoji,
+  isDisplaySeen,
 }: IProps) => {
   const { currentUser } = useContext(AuthContext);
   const [highlight] = useState<string>(() => {
@@ -91,6 +94,14 @@ const MessageItem = ({
                 ></i>
               </div>
             </div>
+            {isDisplaySeen && (
+              <div className="d-flex align-items-end">
+                <img
+                  src={doraImg}
+                  className={`rounded-circle ${styles.seen_img_msg}`}
+                />
+              </div>
+            )}
             <div
               className={styles.msg_container_send}
               data-toggle="tooltip"
@@ -130,15 +141,11 @@ const MessageItem = ({
             data-placement="top"
             title={`${message.sender.name} (${message.sender.email})`}
           >
-            <span
-              className="rounded-circle d-flex justify-content-center align-items-center"
-              style={{
-                backgroundColor: 'var(--color-primary-dark)',
-                color: 'var(--color-grey-light-1)',
-              }}
-            >
-              {message.sender.name[0].toUpperCase()}
-            </span>
+            <img
+              src={doraImg}
+              className={`rounded-circle ${styles.user_img_msg}`}
+              alt=""
+            />
           </div>
           <div
             className={`${styles.msg_container} ${

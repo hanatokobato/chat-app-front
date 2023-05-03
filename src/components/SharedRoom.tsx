@@ -1,6 +1,6 @@
 import { faLocationArrow } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Emoji from './Emoji';
 import MessageItem from './MessageItem';
 import { IRoom, IChat, IMessage, ICoordinates } from './Room';
@@ -16,6 +16,8 @@ interface IProps {
   showEmoji: (message: IMessage, event: any) => void;
   hideEmoji: () => void;
   selectEmoji: (emoji: any) => void;
+  getMessages: (room: string, page?: number, loadMore?: boolean) => void;
+  toggleHasNewMessage: (hasNewMessage: boolean) => void;
 }
 
 const SharedRoom = ({
@@ -28,17 +30,53 @@ const SharedRoom = ({
   saveMessage,
   hideEmoji,
   selectEmoji,
+  getMessages,
+  toggleHasNewMessage,
 }: IProps) => {
   const [inputMessage, setInputMessage] = useState<string>();
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const roomRef = useRef<HTMLDivElement>(null);
 
   const saveMessageHandler = () => {
     saveMessage(inputMessage);
     setInputMessage('');
   };
 
+  const roomScrollHandler = useCallback(
+    (e: any) => {
+      const scroll = roomRef.current?.scrollTop ?? 10;
+      if (
+        currentRoom &&
+        scroll < 1 &&
+        chat?.message?.currentPage &&
+        chat?.message?.lastPage &&
+        chat.message.currentPage < chat.message.lastPage
+      ) {
+        getMessages(currentRoom._id, chat.message.currentPage + 1, true);
+      }
+    },
+    [currentRoom, chat.message.currentPage, chat.message.lastPage, getMessages]
+  );
+
+  useEffect(() => {
+    if (chat.hasNewMessage) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      toggleHasNewMessage(false);
+    }
+  }, [chat]);
+
+  useEffect(() => {
+    const roomEl = roomRef.current;
+    roomEl?.addEventListener('scroll', roomScrollHandler);
+
+    return () => {
+      roomEl?.removeEventListener('scroll', roomScrollHandler);
+    };
+  }, [roomScrollHandler]);
+
   return (
     <>
-      <div id="shared_room" className={styles['room--shared']}>
+      <div ref={roomRef} id="shared_room" className={styles['room--shared']}>
         {chat.message.isLoading && (
           <div className="loading mb-2 text-center">
             <svg
@@ -81,6 +119,7 @@ const SharedRoom = ({
             hideEmoji={hideEmoji}
           />
         ))}
+        <div ref={bottomRef}></div>
       </div>
       <div className="mt-3">
         <div className="input-group">

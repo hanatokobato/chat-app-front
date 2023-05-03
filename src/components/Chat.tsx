@@ -7,9 +7,8 @@ import Room, { IRoom } from './Room';
 import AppError from '../utils/AppError';
 import { AuthContext } from '../context/AuthContext';
 import useCurrentPath from '../hooks/useCurrentPath';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import Search from './Search';
+import { useParams } from 'react-router-dom';
 
 const Chat = () => {
   const { logout } = useContext(AuthContext);
@@ -17,6 +16,7 @@ const Chat = () => {
   const [filteredRooms, setFilteredRooms] = useState<IRoom[]>([]);
   const [totalRoomCount, setTotalRoomCount] = useState<number | undefined>();
   const currentPath = useCurrentPath();
+  let { id: roomId } = useParams();
 
   const fetchRooms = useCallback(async () => {
     try {
@@ -51,7 +51,7 @@ const Chat = () => {
         <div className={styles.search__result}>
           <span className="badge badge-warning">Result: {totalRoomCount}</span>
         </div>
-        <ChatRooms rooms={filteredRooms} />
+        <ChatRooms rooms={filteredRooms} selectedRoom={roomId} />
       </nav>
       <main className={styles['room-view']}>
         {currentPath === '/rooms/:id' && <Room />}

@@ -1,4 +1,10 @@
-import React, { useState, useContext, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+  useReducer,
+} from 'react';
 import ListUser from './ListUser';
 import PrivateChat from './PrivateChat';
 import SharedRoom from './SharedRoom';
@@ -7,6 +13,9 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useLoaderData } from 'react-router-dom';
 import styles from './Room.module.scss';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
+import { cloneDeep } from 'lodash';
+import Chat from './Chat';
 
 export interface IMessage {
   _id: string;
@@ -15,10 +24,21 @@ export interface IMessage {
   sender: IUser;
   receiver: IUser;
   createdAt: string;
+  seenAt: string;
   reactions: {
     user_id: string;
     emoji_id: string;
   }[];
+}
+
+interface IChatMessage {
+  list: IMessage[];
+  currentPage?: number;
+  perPage?: number;
+  lastPage?: number;
+  total?: number;
+  newMessageArrived?: number;
+  isLoading: boolean;
 }
 
 export interface IChat {
@@ -26,19 +46,8 @@ export interface IChat {
   isPrivateChatExpand: boolean;
   isSelectedReceiverTyping: boolean;
   isOnline: boolean;
-  selectedReceiver?: {
-    _id: string;
-    name: string;
-  };
-  message: {
-    list: IMessage[];
-    currentPage?: number;
-    perPage?: number;
-    lastPage?: number;
-    total?: number;
-    newMessageArrived?: number;
-    isLoading: boolean;
-  };
+  selectedReceiver?: IUser;
+  message: IChatMessage;
   isSeen?: boolean;
   seenAt?: string;
   roomId: string;
@@ -67,6 +76,82 @@ interface ILoader {
   room: IRoom;
 }
 
+enum ChatReducerTypes {
+  PUSH_MESSAGE,
+  TOGGLE_LOADING,
+  SET_MESSAGES,
+  TOGGLE_HAS_NEW_MESSAGE,
+  RESET_CHAT,
+  OPEN_PRIVATE_CHAT,
+  LOAD_MORE,
+  TOGGLE_PRIVATE_CHAT,
+  TOGGLE_TYPING,
+  TOGGLE_SEEN,
+}
+
+interface IChatReducerActionPushMessage {
+  type: ChatReducerTypes.PUSH_MESSAGE;
+  message: IMessage;
+}
+
+interface IChatReducerActionToggleLoading {
+  type: ChatReducerTypes.TOGGLE_LOADING;
+  isLoading: boolean;
+}
+
+interface IChatReducerActionToggleHasNewMessage {
+  type: ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE;
+  hasNewMessage: boolean;
+}
+
+interface IChatReducerActionSetMessages {
+  type: ChatReducerTypes.SET_MESSAGES;
+  message: IChatMessage;
+}
+
+interface IChatReducerActionLoadMore {
+  type: ChatReducerTypes.LOAD_MORE;
+  message: IChatMessage;
+}
+
+interface IChatReducerActionReset {
+  type: ChatReducerTypes.RESET_CHAT;
+}
+
+interface IChatReducerActionOpenPrivateChat {
+  type: ChatReducerTypes.OPEN_PRIVATE_CHAT;
+  receiver: IUser;
+  roomId: string;
+}
+
+interface IChatReducerActionTogglePrivateChatDisplay {
+  type: ChatReducerTypes.TOGGLE_PRIVATE_CHAT;
+}
+
+interface IChatReducerActionToggleIsTyping {
+  type: ChatReducerTypes.TOGGLE_TYPING;
+  isTyping: boolean;
+}
+
+interface IChatReducerActionToggleSeen {
+  type: ChatReducerTypes.TOGGLE_SEEN;
+  seen: boolean;
+  seenAt: string;
+  messageId: string;
+}
+
+type IChatReducerAction =
+  | IChatReducerActionPushMessage
+  | IChatReducerActionToggleLoading
+  | IChatReducerActionSetMessages
+  | IChatReducerActionToggleHasNewMessage
+  | IChatReducerActionReset
+  | IChatReducerActionOpenPrivateChat
+  | IChatReducerActionLoadMore
+  | IChatReducerActionTogglePrivateChatDisplay
+  | IChatReducerActionToggleIsTyping
+  | IChatReducerActionToggleSeen;
+
 export const loader = async ({ request, params }: any) => {
   const roomId = params.id;
 
@@ -93,26 +178,116 @@ const initChat = {
   isOnline: true,
 };
 
+const publicChatReducer = (state: IChat, action: IChatReducerAction) => {
+  const currentChat = cloneDeep(state);
+  if (action.type === ChatReducerTypes.PUSH_MESSAGE) {
+    currentChat.message.list.push(action.message);
+    currentChat.hasNewMessage = true;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE) {
+    currentChat.hasNewMessage = action.hasNewMessage;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_LOADING) {
+    currentChat.message.isLoading = action.isLoading;
+  }
+
+  if (
+    action.type === ChatReducerTypes.LOAD_MORE &&
+    currentChat.message.currentPage !== action.message.currentPage
+  ) {
+    currentChat.message = {
+      ...action.message,
+      list: [...action.message.list, ...currentChat.message.list],
+    };
+  }
+
+  if (action.type === ChatReducerTypes.SET_MESSAGES) {
+    currentChat.message = action.message;
+  }
+
+  return currentChat;
+};
+
+const privateChatReducer = (state: IChat, action: IChatReducerAction) => {
+  const currentChat = cloneDeep(state);
+
+  if (action.type === ChatReducerTypes.PUSH_MESSAGE) {
+    currentChat.message.list.push(action.message);
+    currentChat.isSeen = undefined;
+    currentChat.hasNewMessage = true;
+  }
+
+  if (action.type === ChatReducerTypes.SET_MESSAGES) {
+    currentChat.message = action.message;
+    const lastMsg = action.message.list.at(-1);
+    currentChat.isSeen = !!lastMsg?.createdAt;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE) {
+    currentChat.hasNewMessage = action.hasNewMessage;
+  }
+
+  if (action.type === ChatReducerTypes.RESET_CHAT) {
+    return initChat;
+  }
+
+  if (action.type === ChatReducerTypes.OPEN_PRIVATE_CHAT) {
+    currentChat.selectedReceiver = action.receiver;
+    currentChat.roomId = action.roomId;
+    currentChat.isPrivateChatExpand = true;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_PRIVATE_CHAT) {
+    currentChat.isPrivateChatExpand = !currentChat.isPrivateChatExpand;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_TYPING) {
+    currentChat.isSelectedReceiverTyping = action.isTyping;
+  }
+
+  if (action.type === ChatReducerTypes.TOGGLE_SEEN) {
+    currentChat.message.list.forEach((message, index, arr) => {
+      if (action.messageId === message._id) arr[index].seenAt = action.seenAt;
+    });
+  }
+
+  return currentChat;
+};
+
 const Room = () => {
   const { room } = useLoaderData() as ILoader;
   const { currentUser } = useContext(AuthContext);
-  const [publicChat, setPublicChat] = useState<IChat>(initChat);
-  const [privateChat, setPrivateChat] = useState<IChat>(initChat);
+  const [publicChat, dispatchPublicChat] = useReducer(
+    publicChatReducer,
+    initChat
+  );
+  const [privateChat, dispatchPrivateChat] = useReducer(
+    privateChatReducer,
+    initChat
+  );
   const [selectedMessage, setSelectedMessge] = useState<IMessage>();
   const [isShowEmoji, setIsShowEmoji] = useState<boolean>(false);
   const [emojiCoordinates, setEmojiCoordinates] = useState<ICoordinates>();
   const [currentRoom, setCurrentRoom] = useState<IRoom>();
   const [usersOnline, setUsersOnline] = useState<IUser[]>([]);
+  const { sendMessage: sendWsEvent, lastMessage, readyState } = useWebSocket(
+    `${process.env.REACT_APP_API_WS_URL}/rooms/${room._id}`,
+    {
+      shouldReconnect: (closeEvent) => true,
+      reconnectAttempts: 5,
+      reconnectInterval: (attemptNumber) =>
+        Math.min(Math.pow(2, attemptNumber) * 1000, 10000),
+    }
+  );
 
   const getMessages = useCallback(
     async (room: string, page = 1, loadMore = false) => {
       const isPrivate = room.toString().includes('__');
-      const setChat = isPrivate ? setPrivateChat : setPublicChat;
+      const setChat = isPrivate ? dispatchPrivateChat : dispatchPublicChat;
       try {
-        setChat((currentChat) => ({
-          ...currentChat,
-          isLoading: true,
-        }));
+        setChat({ type: ChatReducerTypes.TOGGLE_LOADING, isLoading: true });
         const response = await axios.get(
           `${process.env.REACT_APP_API_URL}/api/v1/messages?room=${room}&page=${page}`
         );
@@ -123,48 +298,36 @@ const Room = () => {
             user_id: r.user._id,
           })),
         }));
-        setChat((currentChat) => {
-          return {
-            ...currentChat,
-            message: {
-              ...currentChat.message,
-              list: [
-                ...responseMessages.reverse(),
-                // ...currentChat.message.list, // TODO: uncomment
-              ],
-              currentPage: response.data.current_page,
-              perPage: response.data.per_page,
-              lastPage: response.data.last_page,
-              total: response.data.total,
-              newMessageArrived: response.data.data.length,
-            },
-          };
+        setChat({
+          type: loadMore
+            ? ChatReducerTypes.LOAD_MORE
+            : ChatReducerTypes.SET_MESSAGES,
+          message: {
+            list: [...responseMessages.reverse()],
+            currentPage: response.data.currentPage,
+            perPage: response.data.perPage,
+            lastPage: response.data.lastPage,
+            total: response.data.result,
+            isLoading: false,
+            newMessageArrived: response.data.data.length,
+          },
         });
 
-        // TODO: scroll
-        // if (loadMore) {
-        //   this.$nextTick(() => {
-        //     const el = $(isPrivate ? '#private_room' : '#shared_room')
-        //     const lastFirstMessage = el.children().eq(chat.message.newMessageArrived - 1)
-        //     el.scrollTop(lastFirstMessage.position().top - 10)
-        //   })
-        // } else {
-        //   this.scrollToBottom(document.getElementById(isPrivate ? 'private_room' : 'shared_room'), false)
-        // }
+        setChat({
+          type: ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE,
+          hasNewMessage: !loadMore,
+        });
       } catch (error) {
         console.log(error);
       } finally {
-        setChat((currentChat) => ({
-          ...currentChat,
-          isLoading: false,
-        }));
+        setChat({ type: ChatReducerTypes.TOGGLE_LOADING, isLoading: false });
       }
     },
     []
   );
 
   const resetPrivateChat = () => {
-    setPrivateChat(initChat);
+    dispatchPrivateChat({ type: ChatReducerTypes.RESET_CHAT });
   };
 
   const closePrivateChat = () => {
@@ -189,42 +352,23 @@ const Room = () => {
         }
       );
       if (receiver) {
-        setPrivateChat((currentChat) => {
-          return {
-            ...currentChat,
-            message: {
-              ...currentChat.message,
-              list: [...currentChat.message.list, response.data.message],
-            },
-            isSeen: false,
-          };
+        dispatchPrivateChat({
+          type: ChatReducerTypes.PUSH_MESSAGE,
+          message: { ...response.data.data.message, reactions: [] },
         });
-        // TODO: broadcast typing
-        // this.$Echo
-        //   .private(`room.${this.privateChat.roomId}`)
-        //   .whisper('typing', {
-        //     user: this.$root.user,
-        //     isTyping: false,
-        //   });
+        sendWsEvent(
+          JSON.stringify({
+            type: 'typing',
+            isTyping: false,
+            receiverId: privateChat.selectedReceiver?._id,
+          })
+        );
       } else {
-        setPublicChat((currentChat) => {
-          return {
-            ...currentChat,
-            message: {
-              ...currentChat.message,
-              list: [
-                ...currentChat.message.list,
-                { ...response.data.data.message, reactions: [] },
-              ],
-            },
-          };
+        dispatchPublicChat({
+          type: ChatReducerTypes.PUSH_MESSAGE,
+          message: { ...response.data.data.message, reactions: [] },
         });
       }
-      // TODO: scroll to bottom
-      // this.scrollToBottom(
-      //   document.getElementById(`${receiver ? 'private' : 'shared'}_room`),
-      //   true
-      // );
     } catch (error) {
       console.log(error);
     }
@@ -234,16 +378,11 @@ const Room = () => {
     const input = document.getElementById('private_input');
     if (input) {
       input.focus();
-      // TODO: broadcast seen
-      // this.$Echo.private(`room.${this.privateChat.roomId}`)
-      //   .whisper('seen', {
-      //     user: this.$root.user,
-      //     seen: true,
-      //     time: new Date()
-      //   })
-      setPrivateChat((currentChat) => {
-        return { ...currentChat, hasNewMessage: false };
+      dispatchPrivateChat({
+        type: ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE,
+        hasNewMessage: false,
       });
+
       const index = usersOnline.findIndex(
         (item) => item._id === privateChat!.selectedReceiver!._id
       );
@@ -361,12 +500,11 @@ const Room = () => {
       currentUser!.id > receiver._id
         ? `${receiver._id}__${currentUser!.id}`
         : `${currentUser!.id}__${receiver._id}`;
-    setPrivateChat((currentChat) => ({
-      ...currentChat,
-      selectedReceiver: receiver,
-      isPrivateChatExpand: true,
+    dispatchPrivateChat({
+      type: ChatReducerTypes.OPEN_PRIVATE_CHAT,
+      receiver,
       roomId,
-    }));
+    });
     // TODO: subscribe typing
     // this.$Echo.private(`room.${roomId}`) // this room to receive whisper events
     //   .listenForWhisper('typing', (e) => {
@@ -391,18 +529,140 @@ const Room = () => {
       setCurrentRoom(room);
       getMessages(room._id);
     }
-
-    // TODO: join room ws
-
-    // TODO: listen to user in private chat
   }, [room]);
+
+  useEffect(() => {
+    if (lastMessage !== null) {
+      const { eventType, eventData } = JSON.parse(lastMessage.data);
+      switch (eventType) {
+        case 'message':
+          if (
+            eventData.message.room._id &&
+            eventData.message.room._id === room._id
+          ) {
+            dispatchPublicChat({
+              type: ChatReducerTypes.PUSH_MESSAGE,
+              message: { ...eventData.message, reactions: [] },
+            });
+          } else if (
+            !eventData.message.room._id &&
+            eventData.message.receiver._id === currentUser?.id
+          ) {
+            if (
+              privateChat.selectedReceiver &&
+              eventData.message.sender._id ===
+                privateChat.selectedReceiver._id &&
+              privateChat.isPrivateChatExpand
+            ) {
+              dispatchPrivateChat({
+                type: ChatReducerTypes.PUSH_MESSAGE,
+                message: { ...eventData.message, reactions: [] },
+              });
+            } else {
+              setUsersOnline((users) => {
+                const currentUsers = cloneDeep(users);
+                return currentUsers.map((u) => {
+                  if (u._id === eventData.message.sender._id) {
+                    u.new_messages++;
+                  }
+                  return u;
+                });
+              });
+            }
+          }
+          break;
+        case 'users':
+          setUsersOnline(
+            eventData.users.map((u: IUser) => ({ ...u, new_messages: 0 }))
+          );
+          break;
+        case 'joining':
+          setUsersOnline((cur) => [...cur, eventData.user]);
+          break;
+        case 'leaving':
+          setUsersOnline((cur) =>
+            cur.filter((u) => u._id !== eventData.user._id)
+          );
+          break;
+        case 'typing':
+          dispatchPrivateChat({
+            type: ChatReducerTypes.TOGGLE_TYPING,
+            isTyping: eventData.isTyping,
+          });
+          break;
+        case 'seen':
+          dispatchPrivateChat({
+            type: ChatReducerTypes.TOGGLE_SEEN,
+            seen: eventData.seen,
+            seenAt: eventData.seenAt,
+            messageId: eventData.messageId,
+          });
+          break;
+      }
+    }
+  }, [lastMessage]);
+
+  useEffect(() => {
+    const updateSeen = async (messageId: string) => {
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL}/api/v1/messages/${messageId}`,
+        {
+          seenAt: new Date(),
+        }
+      );
+
+      if (response.data.status === 'success') {
+        const message = response.data.data.message;
+        dispatchPrivateChat({
+          type: ChatReducerTypes.TOGGLE_SEEN,
+          seen: true,
+          seenAt: message.seenAt,
+          messageId: message._id,
+        });
+        sendWsEvent(
+          JSON.stringify({
+            type: 'seen',
+            seen: true,
+            seenAt: message.seenAt,
+            messageId: message._id,
+            receiverId: privateChat.selectedReceiver?._id,
+          })
+        );
+      }
+    };
+
+    const lastMsg = privateChat.message.list.at(-1);
+    if (
+      privateChat.selectedReceiver?._id &&
+      privateChat.isPrivateChatExpand &&
+      lastMsg &&
+      !lastMsg.seenAt &&
+      lastMsg.receiver._id === currentUser?.id
+    ) {
+      updateSeen(lastMsg._id);
+    }
+  }, [
+    privateChat.message.list,
+    privateChat.selectedReceiver,
+    privateChat.isPrivateChatExpand,
+  ]);
+
+  const connectionStatus = {
+    [ReadyState.CONNECTING]: 'Connecting',
+    [ReadyState.OPEN]: 'Open',
+    [ReadyState.CLOSING]: 'Closing',
+    [ReadyState.CLOSED]: 'Closed',
+    [ReadyState.UNINSTANTIATED]: 'Uninstantiated',
+  }[readyState];
 
   return (
     <>
       <div className={styles.overview}>
         <div className={styles.overview__heading}>
           <h1>{currentRoom?.name}</h1>
-          <h5>{currentRoom?.description}</h5>
+          <h5>
+            {currentRoom?.description} ({connectionStatus})
+          </h5>
         </div>
       </div>
       <div className={styles.detail}>
@@ -417,6 +677,13 @@ const Room = () => {
             showEmoji={showEmoji}
             hideEmoji={hideEmoji}
             selectEmoji={selectEmoji}
+            getMessages={getMessages}
+            toggleHasNewMessage={(hasNewMessage: boolean) => {
+              dispatchPublicChat({
+                type: ChatReducerTypes.TOGGLE_HAS_NEW_MESSAGE,
+                hasNewMessage: hasNewMessage,
+              });
+            }}
           />
         </div>
         <div className="flex-grow-1">
@@ -434,6 +701,12 @@ const Room = () => {
             showEmoji={showEmoji}
             hideEmoji={hideEmoji}
             selectEmoji={selectEmoji}
+            sendWsEvent={sendWsEvent}
+            togglePrivateChat={() => {
+              dispatchPrivateChat({
+                type: ChatReducerTypes.TOGGLE_PRIVATE_CHAT,
+              });
+            }}
           />
         )}
       </div>

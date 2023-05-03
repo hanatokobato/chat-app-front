@@ -5,7 +5,6 @@ import {
   RouterProvider,
 } from 'react-router-dom';
 import AppError from './components/AppError';
-import ChatLayout from './components/ChatLaylout';
 import Login from './components/Login';
 import { action as loginAction } from './components/Login';
 import { action as signupAction } from './components/Signup';
@@ -38,11 +37,6 @@ function App() {
         {
           index: true,
           element: <Chat />,
-          loader: checkAuthLoader,
-        },
-        {
-          path: '/chat',
-          element: <ChatLayout />,
           loader: checkAuthLoader,
         },
         {

@@ -19,21 +19,19 @@ const ListUser = ({ usersOnline, selectReceiver }: IProps) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
-    const getUsers = async () => {
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/v1/users`
-      );
-      setFilteredUsersList(response.data.data.users);
-    };
-    getUsers();
-  }, []);
+    setFilteredUsersList(
+      usersOnline.filter((user) => user._id !== currentUser?.id)
+    );
+  }, [usersOnline]);
 
   return (
     <div className={styles['contacts-card']}>
       <div className={styles['contacts-header']}>
         <h3 className="d-flex">
           Online
-          <span className="badge badge-success ml-2">{usersOnline.length}</span>
+          <span className="badge badge-success ml-2">
+            {filteredUsersList.length}
+          </span>
         </h3>
         <div className="w-100">
           <Search searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -65,12 +63,11 @@ const ListUser = ({ usersOnline, selectReceiver }: IProps) => {
                     <span>
                       {user.name} {user._id === currentUser!.id ? '(You)' : ''}
                     </span>
-                    <span
-                      className="badge badge-danger font-12px"
-                      v-if="user.new_messages"
-                    >
-                      {user.new_messages}
-                    </span>
+                    {user.new_messages > 0 && (
+                      <span className="badge badge-danger font-12px">
+                        {user.new_messages}
+                      </span>
+                    )}
                   </div>
                   <span>{user.email}</span>
                 </div>
