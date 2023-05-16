@@ -1,10 +1,10 @@
 import React, { useContext, useCallback } from 'react';
 import logoImg from '../assets/images/logo.png';
+import doraImg from '../assets/images/dora.jpg';
 import { AuthContext } from '../context/AuthContext';
 import styles from './Header.module.scss';
-import profileImg from '../assets/images/profile.jpg';
 import axios from 'axios';
-import { useNavigate, useLocation, matchRoutes } from 'react-router-dom';
+import { useNavigate, useLocation, matchRoutes, Link } from 'react-router-dom';
 
 const Header = () => {
   const { currentUser, logout: clearUserInfo } = useContext(AuthContext);
@@ -54,16 +54,16 @@ const Header = () => {
           </div>
         )}
         {currentUser?.id && (
-          <div className={styles['user-nav__user']}>
+          <Link className={styles['user-nav__user']} to="/account">
             <img
-              src={profileImg}
+              src={currentUser.photo || doraImg}
               alt="User photo"
               className={styles['user-nav__user-photo']}
             />
             <span className={styles['user-nav__user-name']}>
               {currentUser?.name}
             </span>
-          </div>
+          </Link>
         )}
       </nav>
     </header>

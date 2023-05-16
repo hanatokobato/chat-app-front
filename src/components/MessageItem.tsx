@@ -5,7 +5,6 @@ import sanitizeHtml from 'sanitize-html';
 import Reaction from './Reaction';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFaceSmile } from '@fortawesome/free-solid-svg-icons';
-import profileImg from '../assets/images/profile.jpg';
 import doraImg from '../assets/images/dora.jpg';
 import styles from './MessageItem.module.scss';
 
@@ -118,10 +117,10 @@ const MessageItem = ({
               className={styles.img_cont_msg}
               data-toggle="tooltip"
               data-placement="top"
-              title={`${message.sender.name} (${message.sender.email})`}
+              title={`${message.sender.name}`}
             >
               <img
-                src={profileImg}
+                src={message.sender.photo || doraImg}
                 className={`rounded-circle ${styles.user_img_msg}`}
                 alt=""
               />
@@ -139,10 +138,10 @@ const MessageItem = ({
             className={`${styles.img_cont_msg} bg-white rounded-circle d-flex justify-content-center align-items-center`}
             data-toggle="tooltip"
             data-placement="top"
-            title={`${message.sender.name} (${message.sender.email})`}
+            title={`${message.sender.name}`}
           >
             <img
-              src={doraImg}
+              src={message.sender.photo || doraImg}
               className={`rounded-circle ${styles.user_img_msg}`}
               alt=""
             />

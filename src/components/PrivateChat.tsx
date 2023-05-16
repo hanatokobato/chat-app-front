@@ -5,7 +5,6 @@ import MessageItem from './MessageItem';
 import { IChat, IMessage, ICoordinates } from './Room';
 import styles from './PrivateChat.module.scss';
 import { throttle } from 'lodash';
-import doraImg from '../assets/images/dora.jpg';
 import { SendMessage } from 'react-use-websocket';
 
 interface IProps {
@@ -97,7 +96,7 @@ const PrivateChat = ({
       >
         <div className={styles.img_cont}>
           <img
-            src={doraImg}
+            src={chat.selectedReceiver?.photo}
             className={`rounded-circle ${styles.user_img}`}
             style={{ width: '40px', height: '40px' }}
             alt=""
@@ -177,7 +176,7 @@ const PrivateChat = ({
             <div className="d-flex justify-content-start mb-4">
               <div className={styles.img_cont_msg}>
                 <img
-                  src={doraImg}
+                  src={chat.selectedReceiver?.photo}
                   className={`rounded-circle ${styles.user_img_msg}`}
                   alt=""
                 />

@@ -65,6 +65,7 @@ export interface IUser {
   email: string;
   new_messages: number;
   color: string;
+  photo?: string;
 }
 
 export interface ICoordinates {
@@ -272,15 +273,16 @@ const Room = () => {
   const [emojiCoordinates, setEmojiCoordinates] = useState<ICoordinates>();
   const [currentRoom, setCurrentRoom] = useState<IRoom>();
   const [usersOnline, setUsersOnline] = useState<IUser[]>([]);
-  const { sendMessage: sendWsEvent, lastMessage, readyState } = useWebSocket(
-    `${process.env.REACT_APP_API_WS_URL}/rooms/${room._id}`,
-    {
-      shouldReconnect: (closeEvent) => true,
-      reconnectAttempts: 5,
-      reconnectInterval: (attemptNumber) =>
-        Math.min(Math.pow(2, attemptNumber) * 1000, 10000),
-    }
-  );
+  const {
+    sendMessage: sendWsEvent,
+    lastMessage,
+    readyState,
+  } = useWebSocket(`${process.env.REACT_APP_API_WS_URL}/rooms/${room._id}`, {
+    shouldReconnect: (closeEvent) => true,
+    reconnectAttempts: 5,
+    reconnectInterval: (attemptNumber) =>
+      Math.min(Math.pow(2, attemptNumber) * 1000, 10000),
+  });
 
   const getMessages = useCallback(
     async (room: string, page = 1, loadMore = false) => {
@@ -573,11 +575,18 @@ const Room = () => {
           break;
         case 'users':
           setUsersOnline(
-            eventData.users.map((u: IUser) => ({ ...u, new_messages: 0 }))
+            eventData.users.map((u: any) => ({
+              ...u,
+              new_messages: 0,
+              photo: u.photoUrl,
+            }))
           );
           break;
         case 'joining':
-          setUsersOnline((cur) => [...cur, eventData.user]);
+          setUsersOnline((cur) => [
+            ...cur,
+            { ...eventData.user, photo: eventData.user.photoUrl },
+          ]);
           break;
         case 'leaving':
           setUsersOnline((cur) =>

@@ -54,4 +54,10 @@
   &__logout {
     text-transform: uppercase;
   }
+
+  &__user,
+  &__user:hover {
+    color: inherit;
+    text-decoration: none;
+  }
 }
