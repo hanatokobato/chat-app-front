@@ -5,18 +5,21 @@ export interface ICurrentUser {
   id: string;
   name: string;
   email: string;
+  photo?: string;
 }
 
 interface IAuthContext {
   currentUser?: ICurrentUser;
   login: (user: ICurrentUser) => void;
   logout: () => void;
+  setUserAttr: (attr: string, value: any) => void;
 }
 
 export const AuthContext = createContext<IAuthContext>({
   currentUser: undefined,
   login: () => {},
   logout: () => {},
+  setUserAttr: () => {},
 });
 
 const AuthProvider = ({ children }: any) => {
@@ -33,8 +36,18 @@ const AuthProvider = ({ children }: any) => {
     setCurrentUser(undefined);
   }, [setCurrentUser]);
 
+  const setUserAttr = useCallback(
+    (attr: string, value: any) => {
+      setCurrentUser((curUser: ICurrentUser) => ({
+        ...curUser,
+        [attr]: value,
+      }));
+    },
+    [setCurrentUser]
+  );
+
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, setUserAttr }}>
       {children}
     </AuthContext.Provider>
   );

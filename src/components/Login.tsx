@@ -2,7 +2,6 @@ import React from 'react';
 import axios from 'axios';
 import { Form, redirect, useActionData, useNavigation } from 'react-router-dom';
 import styles from './Login.module.scss';
-import AppError from '../utils/AppError';
 import { ICurrentUser } from '../context/AuthContext';
 import Header from './Header';
 
@@ -23,7 +22,7 @@ export const action =
 
       if (response.data.status === 'success') {
         const user = response.data.data.user;
-        login({ id: user._id, email: user.email, name: user.name });
+        login({ id: user._id, email: user.email, name: user.name, photo: user.photoUrl });
         return redirect('/');
       } else {
         return {

@@ -1,12 +1,9 @@
-import { faSearch, faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { IUser } from './Room';
-import axios from 'axios';
-import userImg from '../assets/images/profile.jpg';
 import styles from './ListUser.module.scss';
 import Search from './Search';
+import AppError from '../utils/AppError';
 
 interface IProps {
   usersOnline: IUser[];
@@ -15,6 +12,8 @@ interface IProps {
 
 const ListUser = ({ usersOnline, selectReceiver }: IProps) => {
   const { currentUser } = useContext(AuthContext);
+  if (!currentUser) throw new AppError('Please log in.', 401);
+
   const [filteredUsersList, setFilteredUsersList] = useState<IUser[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -52,7 +51,7 @@ const ListUser = ({ usersOnline, selectReceiver }: IProps) => {
               <div className="d-flex bd-highlight">
                 <div className="img_cont">
                   <img
-                    src={user._id === currentUser!.id ? userImg : userImg}
+                    src={user.photo}
                     className={`rounded-circle ${styles['user-img']}`}
                     alt="user_img"
                   />

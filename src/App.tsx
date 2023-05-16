@@ -13,6 +13,7 @@ import Signup from './components/Signup';
 import { AuthContext } from './context/AuthContext';
 import { loader as roomLoader } from './components/Room';
 import Chat from './components/Chat';
+import Account from './components/Account';
 
 function App() {
   const { login, currentUser } = useContext(AuthContext);
@@ -49,17 +50,23 @@ function App() {
           element: <Chat />,
           loader: roomLoader,
         },
+        {
+          path: '/account',
+          element: <Account />,
+        },
       ],
     },
     {
       path: '/login',
       element: <Login />,
+      errorElement: <AppError />,
       loader: checkAuthLoader,
       action: loginAction({ login }),
     },
     {
       path: '/signup',
       element: <Signup />,
+      errorElement: <AppError />,
       loader: checkAuthLoader,
       action: signupAction({ login }),
     },
