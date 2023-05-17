@@ -59,7 +59,7 @@ const Account = () => {
         `${process.env.REACT_APP_API_URL}/api/v1/users/${currentUser.id}`,
         formData
       );
-      if (response.data.data.status === 'success') {
+      if (response.data.status === 'success') {
         setUserAttr('photo', response.data.data.user.photoUrl);
         setErrorMessage(undefined);
       }
