@@ -61,6 +61,7 @@ const Account = () => {
       );
       if (response.data.status === 'success') {
         setUserAttr('photo', response.data.data.user.photoUrl);
+        setUserAttr('name', response.data.data.user.name);
         setErrorMessage(undefined);
       }
     } catch (e: any) {
