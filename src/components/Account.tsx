@@ -30,6 +30,7 @@ const Account = () => {
   if (!currentUser) throw new AppError('Please log in.', 401);
 
   const [image, setImage] = useState<string>();
+  const [errorMessage, setErrorMessage] = useState<string>();
 
   const {
     register,
@@ -49,15 +50,24 @@ const Account = () => {
   };
 
   const submitHandler = async (data: any) => {
-    const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('photo', data.photo[0]);
+    try {
+      const formData = new FormData();
+      formData.append('name', data.name);
+      formData.append('photo', data.photo[0]);
 
-    const response: any = await axios.patch(
-      `${process.env.REACT_APP_API_URL}/api/v1/users/${currentUser.id}`,
-      formData
-    );
-    setUserAttr('photo', response.data.data.user.photoUrl);
+      const response: any = await axios.patch(
+        `${process.env.REACT_APP_API_URL}/api/v1/users/${currentUser.id}`,
+        formData
+      );
+      if (response.data.data.status === 'success') {
+        setUserAttr('photo', response.data.data.user.photoUrl);
+        setErrorMessage(undefined);
+      }
+    } catch (e: any) {
+      if (e.response?.data?.status === 'error') {
+        setErrorMessage(e.response.data.message);
+      }
+    }
   };
 
   return (
@@ -81,6 +91,11 @@ const Account = () => {
         </nav>
         <div className={styles['user-view__content']}>
           <div className={styles['user-view__form-container']}>
+            {errorMessage && (
+              <div className="alert alert-danger" role="alert">
+                {errorMessage}
+              </div>
+            )}
             <h2
               className={`${styles['heading-secondary']} ${styles['ma-bt-md']}`}
             >
