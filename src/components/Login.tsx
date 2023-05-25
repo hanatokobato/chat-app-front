@@ -5,38 +5,45 @@ import styles from './Login.module.scss';
 import { ICurrentUser } from '../context/AuthContext';
 import Header from './Header';
 
-export const action =
-  ({ login }: { login: (user: ICurrentUser) => void }) =>
-  async ({ request }: any) => {
-    try {
-      const formData = await request.formData();
-      const payload = {
-        email: formData.get('email'),
-        password: formData.get('password'),
-      };
+export const action = ({
+  login,
+}: {
+  login: (user: ICurrentUser) => void;
+}) => async ({ request }: any) => {
+  try {
+    const formData = await request.formData();
+    const payload = {
+      email: formData.get('email'),
+      password: formData.get('password'),
+    };
 
-      const response: any = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/v1/login`,
-        payload
-      );
+    const response: any = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/v1/login`,
+      payload
+    );
 
-      if (response.data.status === 'success') {
-        const user = response.data.data.user;
-        login({ id: user._id, email: user.email, name: user.name, photo: user.photoUrl });
-        return redirect('/');
-      } else {
-        return {
-          status: 'failed',
-          error: 'Invalid email or password.',
-        };
-      }
-    } catch (e: any) {
+    if (response.data.status === 'success') {
+      const user = response.data.data.user;
+      login({
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        photo: user.photoUrl,
+      });
+      return redirect('/');
+    } else {
       return {
         status: 'failed',
         error: 'Invalid email or password.',
       };
     }
-  };
+  } catch (e: any) {
+    return {
+      status: 'failed',
+      error: 'Invalid email or password.',
+    };
+  }
+};
 
 const Login = () => {
   const data: any = useActionData();
@@ -58,7 +65,9 @@ const Login = () => {
               Log into your account
             </h2>
             {data?.status === 'failed' && (
-              <span className={styles.error}>{data.error}</span>
+              <div className="alert alert-danger" role="alert">
+                {data.error}
+              </div>
             )}
           </div>
           <div className={styles['form__group']}>

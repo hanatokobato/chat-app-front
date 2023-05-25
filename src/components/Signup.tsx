@@ -6,40 +6,45 @@ import AppError from '../utils/AppError';
 import { ICurrentUser } from '../context/AuthContext';
 import Header from './Header';
 
-export const action =
-  ({ login }: { login: (user: ICurrentUser) => void }) =>
-  async ({ request }: any) => {
-    try {
-      const formData = await request.formData();
-      const payload = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        passwordConfirm: formData.get('passwordConfirm'),
+export const action = ({
+  login,
+}: {
+  login: (user: ICurrentUser) => void;
+}) => async ({ request }: any) => {
+  try {
+    const formData = await request.formData();
+    const payload = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      password: formData.get('password'),
+      passwordConfirm: formData.get('passwordConfirm'),
+    };
+
+    const response: any = await axios.post(
+      `${process.env.REACT_APP_API_URL}/api/v1/signup`,
+      payload
+    );
+
+    const { data, status } = response.data;
+    if (status === 'success') {
+      const { name, email, _id: id, photoUrl: photo } = data.user;
+      login({ id, email, name, photo });
+      return redirect('/');
+    } else {
+      return {
+        status: 'failed',
+        error: 'Invalid form data.',
       };
-
-      const response: any = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/v1/signup`,
-        payload
-      );
-
-      const { data, status } = response.data;
-      if (status === 'success') {
-        const { name, email, _id: id, photoUrl: photo } = data.user;
-        login({ id, email, name, photo });
-        return redirect('/');
-      } else {
-        return {
-          status: 'failed',
-          error: 'Invalid form data.',
-        };
-      }
-    } catch (e: any) {
-      if (e.response) throw new AppError(e.statusText, e.status);
-
-      throw new AppError(e, 500);
     }
-  };
+  } catch (e: any) {
+    if (e.response.status !== 400) throw new AppError(e.statusText, e.status);
+
+    return {
+      status: 'failed',
+      error: e.response.data.message,
+    };
+  }
+};
 
 const Signup = () => {
   const data: any = useActionData();
@@ -60,7 +65,9 @@ const Signup = () => {
             Create new account
           </h2>
           {data?.status === 'failed' && (
-            <span className={styles.error}>{data.error}</span>
+            <div className="alert alert-danger" role="alert">
+              {data.error}
+            </div>
           )}
           <div className={styles['form__group']}>
             <label htmlFor="name" className={styles['form__label']}>
