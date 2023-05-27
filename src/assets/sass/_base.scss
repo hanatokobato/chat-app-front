@@ -83,6 +83,7 @@ body {
 .btn:focus {
   outline: none;
   background-color: var(--color-primary-dark);
+  color: #fff !important;
 }
 
 .btn--white {
@@ -95,10 +96,14 @@ body {
 
 .btn--primary {
   background-color: var(--color-primary);
-  color: #fff;
+  color: #fff !important;
 }
 .btn--green::after {
   background-color: var(--color-primary);
+}
+.btn--outlined-primary {
+  outline: 1px solid var(--color-primary);
+  color: var(--color-primary) !important;
 }
 
 .btn--small {
@@ -110,7 +115,7 @@ body {
 .btn-small:link,
 .btn-small:visited {
   background-color: var(--color-primary);
-  color: #fff;
+  color: #fff !important;
   font-size: 1.4rem;
   padding: 1.25rem 3rem;
   border-radius: 10rem;
@@ -159,4 +164,8 @@ body {
   outline: none;
   outline: 3px solid var(--color-primary);
   outline-offset: 3px;
+}
+
+.mt-10 {
+  margin-top: 6rem !important;
 }
