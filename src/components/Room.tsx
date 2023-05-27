@@ -16,6 +16,7 @@ import styles from './Room.module.scss';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { cloneDeep } from 'lodash';
 import Chat from './Chat';
+import AppError from '../utils/AppError';
 
 export interface IMessage {
   _id: string;
@@ -273,16 +274,15 @@ const Room = () => {
   const [emojiCoordinates, setEmojiCoordinates] = useState<ICoordinates>();
   const [currentRoom, setCurrentRoom] = useState<IRoom>();
   const [usersOnline, setUsersOnline] = useState<IUser[]>([]);
-  const {
-    sendMessage: sendWsEvent,
-    lastMessage,
-    readyState,
-  } = useWebSocket(`${process.env.REACT_APP_API_WS_URL}/rooms/${room._id}`, {
-    shouldReconnect: (closeEvent) => true,
-    reconnectAttempts: 5,
-    reconnectInterval: (attemptNumber) =>
-      Math.min(Math.pow(2, attemptNumber) * 1000, 10000),
-  });
+  const { sendMessage: sendWsEvent, lastMessage, readyState } = useWebSocket(
+    `${process.env.REACT_APP_API_WS_URL}/rooms/${room._id}`,
+    {
+      shouldReconnect: (closeEvent) => true,
+      reconnectAttempts: 5,
+      reconnectInterval: (attemptNumber) =>
+        Math.min(Math.pow(2, attemptNumber) * 1000, 10000),
+    }
+  );
 
   const getMessages = useCallback(
     async (room: string, page = 1, loadMore = false) => {

@@ -1,0 +1,14 @@
+.error-container {
+  display: flex;
+  justify-content: center;
+  background-image: url('../assets/images/error.png');
+  background-size: contain;
+}
+
+.error-code {
+  font-size: 10rem;
+}
+
+.error-content {
+  font-size: 1.6rem;
+}
