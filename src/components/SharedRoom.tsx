@@ -45,14 +45,15 @@ const SharedRoom = ({
   const roomScrollHandler = useCallback(
     (e: any) => {
       const scroll = roomRef.current?.scrollTop ?? 10;
+      const currentPage = chat.message.currentPage ?? 0;
+      const lastPage = chat.message.lastPage ?? 0;
       if (
         currentRoom &&
-        scroll < 1 &&
-        chat?.message?.currentPage &&
-        chat?.message?.lastPage &&
-        chat.message.currentPage < chat.message.lastPage
+        scroll <= 0 &&
+        chat.message.list.length &&
+        currentPage < lastPage
       ) {
-        getMessages(currentRoom._id, chat.message.currentPage + 1, true);
+        getMessages(currentRoom._id, currentPage + 1, true);
       }
     },
     [currentRoom, chat.message.currentPage, chat.message.lastPage, getMessages]
@@ -63,7 +64,7 @@ const SharedRoom = ({
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
       toggleHasNewMessage(false);
     }
-  }, [chat]);
+  }, [chat.hasNewMessage]);
 
   useEffect(() => {
     const roomEl = roomRef.current;
