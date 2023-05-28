@@ -89,6 +89,7 @@ enum ChatReducerTypes {
   TOGGLE_PRIVATE_CHAT,
   TOGGLE_TYPING,
   TOGGLE_SEEN,
+  UPDATE_REACTION,
 }
 
 interface IChatReducerActionPushMessage {
@@ -142,6 +143,14 @@ interface IChatReducerActionToggleSeen {
   messageId: string;
 }
 
+interface IChatReducerActionUpdateReaction {
+  type: ChatReducerTypes.UPDATE_REACTION;
+  messageId: string;
+  userId: string;
+  emojiId: string;
+  updateType: string;
+}
+
 type IChatReducerAction =
   | IChatReducerActionPushMessage
   | IChatReducerActionToggleLoading
@@ -152,7 +161,8 @@ type IChatReducerAction =
   | IChatReducerActionLoadMore
   | IChatReducerActionTogglePrivateChatDisplay
   | IChatReducerActionToggleIsTyping
-  | IChatReducerActionToggleSeen;
+  | IChatReducerActionToggleSeen
+  | IChatReducerActionUpdateReaction;
 
 export const loader = async ({ request, params }: any) => {
   const roomId = params.id;
@@ -207,6 +217,36 @@ const publicChatReducer = (state: IChat, action: IChatReducerAction) => {
 
   if (action.type === ChatReducerTypes.SET_MESSAGES) {
     currentChat.message = action.message;
+  }
+
+  if (action.type === ChatReducerTypes.UPDATE_REACTION) {
+    const reactMessage = currentChat.message.list.find(
+      (m) => m._id === action.messageId
+    );
+    if (reactMessage) {
+      switch (action.updateType) {
+        case 'reaction_created':
+          reactMessage.reactions.push({
+            user_id: action.userId,
+            emoji_id: action.emojiId,
+          });
+          break;
+        case 'reaction_updated':
+          reactMessage.reactions = reactMessage.reactions.filter(
+            (r) => r.user_id !== action.userId
+          );
+          reactMessage.reactions.push({
+            user_id: action.userId,
+            emoji_id: action.emojiId,
+          });
+          break;
+        case 'reaction_deleted':
+          reactMessage.reactions = reactMessage.reactions.filter(
+            (r) => r.user_id !== action.userId
+          );
+          break;
+      }
+    }
   }
 
   return currentChat;
@@ -605,6 +645,17 @@ const Room = () => {
             seen: eventData.seen,
             seenAt: eventData.seenAt,
             messageId: eventData.messageId,
+          });
+          break;
+        case 'reaction_created':
+        case 'reaction_updated':
+        case 'reaction_deleted':
+          dispatchPublicChat({
+            type: ChatReducerTypes.UPDATE_REACTION,
+            updateType: eventType,
+            messageId: eventData.reaction.message_id,
+            userId: eventData.reaction.user_id,
+            emojiId: eventData.reaction.emoji_id,
           });
           break;
       }
